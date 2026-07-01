@@ -1,0 +1,3096 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFMIND DRAUGHTS LEAGUE – Public</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a3c6e">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js">
+    </script>
+
+    <style>
+        /* ===== BASE ===== */
+        :root {
+            --primary: #1a3c6e;
+            --primary-dark: #0f2d54;
+            --gold: #ffd700;
+            --bg: #f0f2f5;
+            --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* ===== SPLASH ===== */
+        #splashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a1a;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at center, #0f1a2f 0%, #04080f 100%);
+        }
+        #splashScreen .splash-logo {
+            max-width: 80%;
+            max-height: 55vh;
+            object-fit: contain;
+            border-radius: 20px;
+            box-shadow: 0 0 60px rgba(26, 60, 110, 0.5);
+            animation: pulseGlow 2.8s ease-in-out infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% {
+                filter: drop-shadow(0 0 20px rgba(26, 60, 110, 0.3));
+                transform: scale(0.98);
+            }
+            100% {
+                filter: drop-shadow(0 0 50px rgba(26, 60, 110, 0.8));
+                transform: scale(1.02);
+            }
+        }
+        .glass-btn {
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 60px;
+            padding: 16px 56px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(255, 215, 0, 0.1), transparent, rgba(255, 215, 0, 0.1), transparent);
+            animation: spinGlow 6s linear infinite;
+        }
+        @keyframes spinGlow {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        .glass-btn:hover {
+            transform: scale(1.06);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 60px rgba(255, 215, 0, 0.15);
+        }
+        .glass-btn span {
+            position: relative;
+            z-index: 2;
+        }
+        .glass-btn i {
+            margin-right: 10px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ===== NEON GLASS POPUP ===== */
+        .neon-glass-modal .modal-content {
+            background: rgba(10, 10, 30, 0.92);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 60px rgba(255, 215, 0, 0.2), inset 0 0 60px rgba(255, 215, 0, 0.05);
+            border-radius: 30px;
+            color: #fff;
+            animation: neonPulse 2s ease-in-out infinite alternate;
+        }
+        @keyframes neonPulse {
+            0% {
+                box-shadow: 0 0 40px rgba(255, 215, 0, 0.15), inset 0 0 40px rgba(255, 215, 0, 0.03);
+            }
+            100% {
+                box-shadow: 0 0 80px rgba(255, 215, 0, 0.35), inset 0 0 80px rgba(255, 215, 0, 0.08);
+            }
+        }
+        .neon-glass-modal .modal-header {
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            background: transparent;
+        }
+        .neon-glass-modal .modal-header .btn-close {
+            filter: invert(1) brightness(2);
+        }
+        .neon-glass-modal .modal-body {
+            text-align: center;
+            padding: 2rem;
+        }
+        .neon-glass-modal .modal-body .big-id {
+            font-size: 2.2rem;
+            font-weight: 800;
+            font-family: 'Courier New', monospace;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
+            letter-spacing: 2px;
+            background: rgba(255, 215, 0, 0.08);
+            padding: 16px 30px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            display: inline-block;
+        }
+        .neon-glass-modal .modal-body .celebrate-icon {
+            font-size: 4rem;
+            color: #ffd700;
+            animation: celebBounce 1.2s ease-in-out infinite;
+        }
+        @keyframes celebBounce {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+        }
+        .neon-glass-modal .modal-footer {
+            border-top: 1px solid rgba(255, 215, 0, 0.15);
+            background: transparent;
+            justify-content: center;
+        }
+        .neon-glass-modal .modal-footer .btn-neon-close {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 60px;
+            padding: 10px 40px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .neon-glass-modal .modal-footer .btn-neon-close:hover {
+            background: rgba(255, 215, 0, 0.15);
+            border-color: #ffd700;
+            color: #ffd700;
+            transform: scale(1.04);
+        }
+
+        /* ===== NEON BOARD ===== */
+        .neon-board {
+            background: linear-gradient(135deg, #0a2f6e 0%, #1a7a4a 50%, #0a2f6e 100%);
+            background-size: 300% 300%;
+            animation: gradientMove 4s ease-in-out infinite alternate;
+            border-radius: 16px;
+            padding: 12px 18px;
+            margin-bottom: 22px;
+            box-shadow: 0 0 30px rgba(26, 60, 110, 0.3), inset 0 0 60px rgba(0, 255, 200, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            overflow: hidden;
+            position: relative;
+        }
+        .neon-board::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(90deg, transparent 0px, rgba(255, 255, 255, 0.03) 2px, transparent 4px, rgba(0, 255, 200, 0.02) 6px, transparent 8px);
+            pointer-events: none;
+            animation: scanLines 8s linear infinite;
+        }
+        @keyframes scanLines {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+        @keyframes gradientMove {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 100% 50%;
+            }
+        }
+        .neon-text-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            z-index: 2;
+        }
+        .neon-text-wrapper .marquee {
+            display: inline-block;
+            animation: scrollMarquee 18s linear infinite;
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0, 255, 200, 0.5), 0 0 60px rgba(0, 255, 200, 0.2);
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+        }
+        .neon-text-wrapper .marquee i {
+            color: #ffd700;
+            margin: 0 12px;
+        }
+        .neon-text-wrapper .marquee span {
+            color: #ffd700;
+            font-weight: 900;
+        }
+        @keyframes scrollMarquee {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-200%);
+            }
+        }
+
+        /* ===== AD BANNER ===== */
+        .ad-scroll {
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 18px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            position: relative;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(90deg, #f8f9fa, #e9ecef, #f8f9fa);
+        }
+        .ad-scroll-track {
+            display: flex;
+            animation: scrollAd 28s linear infinite;
+            white-space: nowrap;
+        }
+        .ad-scroll-track .ad-item {
+            padding: 0 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1a3c6e;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .ad-scroll-track .ad-item i {
+            color: #ffd700;
+            font-size: 1.1rem;
+        }
+        .ad-scroll-track .ad-item .highlight {
+            color: #dc3545;
+            font-weight: 800;
+        }
+        .ad-scroll-track .ad-item .highlight-gold {
+            color: #b8860b;
+            font-weight: 800;
+        }
+        @keyframes scrollAd {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* ===== NAV ===== */
+        .navbar {
+            background: linear-gradient(135deg, #1a3c6e 0%, #0f2d54 100%) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .navbar-brand i {
+            margin-right: 8px;
+            color: #ffd700;
+        }
+        .nav-link {
+            font-weight: 500;
+            padding: 8px 16px !important;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            margin: 0 2px;
+        }
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2) !important;
+            font-weight: 700;
+        }
+        .view-tab {
+            display: none;
+            padding-top: 20px;
+            animation: fadeIn 0.35s ease;
+        }
+        .view-tab.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== HOME HERO SLIDESHOW ===== */
+        .home-hero {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            min-height: 380px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 40px rgba(26, 60, 110, 0.3);
+        }
+        .hero-slideshow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .hero-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 1s ease;
+            opacity: 0;
+        }
+        .hero-slide.active {
+            opacity: 1;
+        }
+        .hero-overlay {
+            position: relative;
+            z-index: 2;
+            padding: 40px 30px;
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 24px;
+            min-height: 380px;
+            display: flex;
+            align-items: center;
+        }
+        .hero-overlay .hero-content {
+            color: #fff;
+            max-width: 650px;
+        }
+        .hero-overlay .hero-content h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+        .hero-overlay .hero-content h1 .gold {
+            color: #ffd700;
+        }
+        .hero-overlay .hero-content p {
+            font-size: 1.15rem;
+            opacity: 0.9;
+            margin-top: 12px;
+        }
+        .hero-overlay .hero-badge {
+            display: inline-block;
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 40px;
+            padding: 6px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #ffd700;
+            margin-top: 10px;
+        }
+        @media (max-width:768px) {
+            .home-hero {
+                min-height: 280px;
+            }
+            .hero-overlay {
+                min-height: 280px;
+                padding: 20px;
+            }
+            .hero-overlay .hero-content h1 {
+                font-size: 1.8rem;
+            }
+            .hero-overlay .hero-content p {
+                font-size: 0.95rem;
+            }
+        }
+
+        .home-logo-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin: 20px 0 10px;
+        }
+        .home-logo-row img {
+            max-height: 70px;
+            object-fit: contain;
+        }
+
+        .home-stats-mini {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .home-stats-mini .mini-stat {
+            background: #fff;
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            border-bottom: 3px solid #ffd700;
+        }
+        .home-stats-mini .mini-stat .num {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #1a3c6e;
+        }
+        .home-stats-mini .mini-stat .lbl {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            font-weight: 700;
+            color: #1a3c6e;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 12px;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #ffd700, #1a3c6e);
+            border-radius: 4px;
+        }
+        .section-title.text-center::after {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .founder-card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            padding: 30px;
+            transition: transform 0.3s;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+        .founder-card:hover {
+            transform: translateY(-4px);
+        }
+        .founder-card .founder-img {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #ffd700;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+        }
+        .founder-card .founder-name {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1a3c6e;
+            margin-top: 16px;
+        }
+        .founder-card .founder-title {
+            color: #b8860b;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .founder-card .founder-bio {
+            color: #495057;
+            max-width: 500px;
+            margin: 12px auto 0;
+            line-height: 1.7;
+        }
+
+        .mission-vision-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width:768px) {
+            .mission-vision-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .mv-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px 28px;
+            box-shadow: var(--card-shadow);
+            border-left: 5px solid #ffd700;
+            transition: transform 0.3s;
+        }
+        .mv-card:hover {
+            transform: translateY(-3px);
+        }
+        .mv-card .mv-icon {
+            font-size: 2rem;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        .mv-card h5 {
+            font-weight: 700;
+            color: #1a3c6e;
+        }
+        .mv-card p {
+            color: #495057;
+            margin-bottom: 0;
+            line-height: 1.6;
+        }
+
+        .values-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .values-list .value-tag {
+            background: #e9ecef;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: #1a3c6e;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .values-list .value-tag i {
+            color: #ffd700;
+        }
+
+        /* ===== CARDS ===== */
+        .card-dashboard {
+            border-radius: 14px;
+            box-shadow: var(--card-shadow);
+            border: none;
+            margin-bottom: 22px;
+            background: #fff;
+        }
+        .card-dashboard .card-body {
+            padding: 1.6rem;
+        }
+        .stat-card {
+            border-radius: 14px;
+            border: none;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s;
+            background: #fff;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+        .stat-card .card-body {
+            padding: 1.2rem;
+        }
+        .stat-card .card-body h2 {
+            font-weight: 800;
+            font-size: 1.8rem;
+            margin: 0;
+        }
+        .stat-card .card-body .stat-icon {
+            font-size: 2rem;
+            opacity: 0.3;
+        }
+        .stat-card .card-body .stat-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-card-primary {
+            border-left: 4px solid #0d6efd;
+        }
+        .stat-card-success {
+            border-left: 4px solid #198754;
+        }
+        .stat-card-warning {
+            border-left: 4px solid #ffc107;
+        }
+        .stat-card-danger {
+            border-left: 4px solid #dc3545;
+        }
+        .stat-card-info {
+            border-left: 4px solid #0dcaf0;
+        }
+        .stat-card-purple {
+            border-left: 4px solid #6f42c1;
+        }
+        .stat-card-orange {
+            border-left: 4px solid #fd7e14;
+        }
+        .stat-card-secondary {
+            border-left: 4px solid #6c757d;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        /* ===== MAP ===== */
+        .map-container {
+            background: #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 300px;
+            position: relative;
+            overflow: hidden;
+        }
+        .map-region {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #fff;
+            transition: all 0.3s;
+            cursor: default;
+        }
+        .map-region:hover {
+            transform: scale(1.05);
+        }
+
+        /* ===== ACTIVITY ===== */
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .activity-content {
+            flex: 1;
+        }
+        .activity-content .title {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .activity-content .time {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+
+        .quick-action-btn {
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-weight: 600;
+            margin: 4px;
+            border: none;
+            transition: all 0.3s;
+        }
+        .quick-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ===== RANKING TABS ===== */
+        .rank-view {
+            display: none;
+        }
+        .rank-view.active {
+            display: block;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width:768px) {
+            .container {
+                padding: 0 10px;
+            }
+            .card-dashboard .card-body {
+                padding: 1rem;
+            }
+            .stat-card .card-body h2 {
+                font-size: 1.4rem;
+            }
+            .neon-text-wrapper .marquee {
+                font-size: 0.9rem;
+            }
+            .ad-scroll {
+                height: 48px;
+            }
+            .ad-scroll-track .ad-item {
+                font-size: 0.8rem;
+                padding: 0 20px;
+            }
+            #splashScreen .splash-logo {
+                max-width: 92%;
+                max-height: 40vh;
+            }
+            .glass-btn {
+                padding: 12px 32px;
+                font-size: 1.1rem;
+            }
+            .chart-container {
+                height: 200px;
+            }
+        }
+
+        .player-id {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-pending {
+            background: #ffc107;
+            color: #000;
+            font-weight: 600;
+        }
+        .badge-approved {
+            background: #198754;
+            color: #fff;
+            font-weight: 600;
+        }
+        .badge-rejected {
+            background: #dc3545;
+            color: #fff;
+            font-weight: 600;
+        }
+        .badge-team-pending {
+            background: #ffc107;
+            color: #000;
+            font-weight: 600;
+        }
+        .badge-team-approved {
+            background: #198754;
+            color: #fff;
+            font-weight: 600;
+        }
+        .badge-team-rejected {
+            background: #dc3545;
+            color: #fff;
+            font-weight: 600;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #1a3c6e, #0f2d54);
+            color: #fff;
+            border: none;
+            padding: 11px 32px;
+            border-radius: 30px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px rgba(26, 60, 110, 0.3);
+        }
+        .btn-submit:hover {
+            background: linear-gradient(135deg, #0f2d54, #091a35);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+        .signature-canvas {
+            border: 2px dashed #ced4da;
+            border-radius: 10px;
+            background: #fdfdfd;
+            width: 100%;
+            height: 130px;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.75);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        #connectionBadge {
+            display: inline-block;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .online-dot {
+            background: #28a745;
+        }
+        .offline-dot {
+            background: #dc3545;
+        }
+        .photo-preview {
+            max-width: 120px;
+            max-height: 120px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            margin-top: 6px;
+        }
+        .scrollable-tabs {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 0;
+            padding-bottom: 4px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+        }
+        .scrollable-tabs::-webkit-scrollbar {
+            height: 4px;
+        }
+        .scrollable-tabs::-webkit-scrollbar-thumb {
+            background: #1a3c6e;
+            border-radius: 4px;
+        }
+        .scrollable-tabs .nav-link {
+            white-space: nowrap;
+            flex-shrink: 0;
+            font-size: 0.82rem;
+            padding: 6px 14px !important;
+            border-radius: 20px;
+            margin: 0 2px;
+            background: transparent;
+            color: #495057;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .scrollable-tabs .nav-link:hover {
+            background: rgba(26, 60, 110, 0.08);
+            border-color: #dee2e6;
+        }
+        .scrollable-tabs .nav-link.active {
+            background: #1a3c6e;
+            color: #fff;
+            border-color: #1a3c6e;
+            font-weight: 600;
+        }
+
+        .rank-badge {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.8rem;
+            background: #e9ecef;
+            color: #495057;
+        }
+        .rank-badge.rank-1 {
+            background: #ffd700;
+            color: #000;
+        }
+        .rank-badge.rank-2 {
+            background: #c0c0c0;
+            color: #000;
+        }
+        .rank-badge.rank-3 {
+            background: #cd7f32;
+            color: #fff;
+        }
+        .signature-preview {
+            max-height: 50px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        .preview-section .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #6c757d;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .preview-section .value {
+            font-weight: 600;
+            color: #1a3c6e;
+        }
+        .preview-divider {
+            border-top: 1px dashed #dee2e6;
+            margin: 12px 0;
+        }
+        .id-validation-icon {
+            font-size: 1rem;
+            margin-left: 6px;
+        }
+        .id-validation-icon.valid {
+            color: #198754;
+        }
+        .id-validation-icon.invalid {
+            color: #dc3545;
+        }
+        .watermark-print {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 80px;
+            font-weight: bold;
+            color: rgba(0, 0, 0, 0.06);
+            pointer-events: none;
+            z-index: 9999;
+            white-space: nowrap;
+        }
+        .watermark-logo-print {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-20deg);
+            opacity: 0.1;
+            pointer-events: none;
+            z-index: 9998;
+            max-width: 400px;
+            max-height: 400px;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printContent,
+            #printContent * {
+                visibility: visible;
+            }
+            #printContent {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 30px;
+                background: #fff;
+            }
+            .watermark-print {
+                display: block !important;
+            }
+            .watermark-logo-print {
+                display: block !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        /* ===== RESULT FORM ENHANCEMENTS ===== */
+        .player-verify-card {
+            background: #f8f9fa;
+            border-radius: 14px;
+            padding: 16px;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s;
+        }
+        .player-verify-card.verified {
+            border-color: #198754;
+            background: #f0fff4;
+        }
+        .player-verify-card .verify-btn {
+            border-radius: 30px;
+            padding: 4px 18px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .player-verify-card .verify-btn:hover {
+            transform: scale(1.04);
+        }
+        .player-verify-card .player-photo-thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #dee2e6;
+        }
+        .player-verify-card .player-photo-thumb.verified {
+            border-color: #198754;
+        }
+        .player-verify-card .verified-badge {
+            color: #198754;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .winner-badge {
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .winner-badge.a-wins {
+            background: #0d6efd;
+            color: #fff;
+        }
+        .winner-badge.b-wins {
+            background: #dc3545;
+            color: #fff;
+        }
+        .winner-badge.draw {
+            background: #ffc107;
+            color: #000;
+        }
+        .winner-badge.pending {
+            background: #6c757d;
+            color: #fff;
+        }
+        .warning-group-hidden {
+            display: none !important;
+        }
+        .score-input-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .score-input-group .score-box {
+            flex: 1;
+            min-width: 100px;
+        }
+        .score-input-group .versus {
+            font-weight: 800;
+            color: #6c757d;
+            font-size: 1.2rem;
+        }
+        .auto-winner-display {
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            text-align: center;
+            margin-top: 8px;
+        }
+        .auto-winner-display.a-wins {
+            background: #cfe2ff;
+            color: #0d6efd;
+        }
+        .auto-winner-display.b-wins {
+            background: #f8d7da;
+            color: #dc3545;
+        }
+        .auto-winner-display.draw {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .auto-winner-display.pending {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+
+        /* ===== FINANCIAL PIN LOCK ===== */
+        .financial-locked {
+            position: relative;
+            filter: blur(6px);
+            pointer-events: none;
+            user-select: none;
+            opacity: 0.5;
+            min-height: 120px;
+        }
+        .financial-locked .financial-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            z-index: 10;
+            pointer-events: auto;
+            backdrop-filter: blur(2px);
+        }
+        .financial-locked .financial-overlay .pin-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .financial-locked .financial-overlay .pin-input-group input {
+            border-radius: 30px;
+            padding: 8px 20px;
+            border: 2px solid #1a3c6e;
+            width: 180px;
+            text-align: center;
+            letter-spacing: 4px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .financial-locked .financial-overlay .pin-input-group button {
+            border-radius: 30px;
+            padding: 8px 28px;
+            font-weight: 600;
+        }
+        .financial-unlocked .financial-overlay {
+            display: none !important;
+        }
+        .financial-unlocked {
+            filter: none !important;
+            pointer-events: auto !important;
+            opacity: 1 !important;
+        }
+
+        /* ===== VVIP PORTAL BUTTON ===== */
+        .vvip-btn {
+            background: linear-gradient(135deg, #b8860b, #ffd700, #b8860b);
+            border: none;
+            border-radius: 60px;
+            padding: 8px 24px;
+            font-weight: 800;
+            color: #1a0e00;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .vvip-btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.15), transparent, rgba(255, 255, 255, 0.15), transparent);
+            animation: spinGlow 6s linear infinite;
+        }
+        .vvip-btn:hover {
+            transform: scale(1.06);
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.6);
+            color: #1a0e00;
+        }
+        .vvip-btn span {
+            position: relative;
+            z-index: 2;
+        }
+        .vvip-btn i {
+            margin-right: 6px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* VVIP Coming Soon Modal */
+        .vvip-modal .modal-content {
+            background: linear-gradient(145deg, #1a0e00, #3d2b00, #1a0e00);
+            border: 2px solid #ffd700;
+            box-shadow: 0 0 80px rgba(255, 215, 0, 0.2), inset 0 0 80px rgba(255, 215, 0, 0.05);
+            border-radius: 30px;
+            color: #fff;
+        }
+        .vvip-modal .modal-header {
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            background: transparent;
+        }
+        .vvip-modal .modal-header .btn-close {
+            filter: invert(1) brightness(2);
+        }
+        .vvip-modal .modal-body {
+            text-align: center;
+            padding: 2.5rem;
+        }
+        .vvip-modal .modal-body .vvip-icon {
+            font-size: 5rem;
+            color: #ffd700;
+            animation: celebBounce 1.8s ease-in-out infinite;
+        }
+        .vvip-modal .modal-body h3 {
+            color: #ffd700;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-top: 16px;
+        }
+        .vvip-modal .modal-body p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.05rem;
+        }
+        .vvip-modal .modal-body .coming-soon-badge {
+            display: inline-block;
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 60px;
+            padding: 8px 32px;
+            font-weight: 700;
+            color: #ffd700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+        .vvip-modal .modal-footer {
+            border-top: 1px solid rgba(255, 215, 0, 0.15);
+            background: transparent;
+            justify-content: center;
+        }
+        .vvip-modal .modal-footer .btn-vvip-close {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+            border-radius: 60px;
+            padding: 10px 44px;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+        .vvip-modal .modal-footer .btn-vvip-close:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: scale(1.04);
+        }
+
+        /* ===== PUBLIC HIDDEN ELEMENTS ===== */
+        #results,
+        #admin,
+        [data-view="results"],
+        [data-view="admin"],
+        #loginBtn,
+        #logoutBtn,
+        #userDisplay {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay">
+        <div class="spinner-border text-primary" style="width:3.5rem;height:3.5rem;"></div>
+    </div>
+
+    <!-- SPLASH SCREEN -->
+    <div id="splashScreen">
+        <img class="splash-logo" src="https://i.postimg.cc/kDNvDRgT/Whats-App-Image-2026-06-28-at-20-39-37.jpg" alt="AFMIND Logo">
+        <button id="splashEnterBtn" class="glass-btn"><i class="fas fa-play"></i><span>ANZA</span></button>
+    </div>
+
+    <!-- NEON GLASS REGISTRATION POPUP -->
+    <div class="modal fade neon-glass-modal" id="regSuccessModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title w-100 text-center"><i class="fas fa-trophy me-2" style="color:#ffd700;"></i>Usajili Umekamilika!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="celebrate-icon"><i class="fas fa-star"></i></div>
+                    <h4 class="mt-3" style="color:#ffd700;">Hongera!</h4>
+                    <p style="color:rgba(255,255,255,0.8);">Mchezaji wako amesajiliwa kikamilifu</p>
+                    <div class="big-id" id="regSuccessId">ADL-INV-DAR-00001</div>
+                    <p class="mt-3" style="color:rgba(255,255,255,0.6); font-size:0.9rem;">Hifadhi namba hii kwa mahitaji ya baadaye</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-neon-close" data-bs-dismiss="modal"><i class="fas fa-check me-1"></i> Sawa, Nimeelewa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VVIP COMING SOON MODAL -->
+    <div class="modal fade vvip-modal" id="vvipModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title w-100 text-center" style="color:#ffd700;"><i class="fas fa-crown me-2"></i>AFMIND VVIP PORTAL</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="vvip-icon"><i class="fas fa-crown"></i></div>
+                    <h3>Inaandaliwa ...</h3>
+                    <p>Portal ya VVIP itakuja hivi karibuni na huduma za kipekee kwa wadhamini, waandaaji na washirika wa AFMIND CUP.</p>
+                    <div class="coming-soon-badge"><i class="fas fa-clock me-2"></i>Coming Soon</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-vvip-close" data-bs-dismiss="modal"><i class="fas fa-check me-1"></i> Sawa, Nimeelewa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVIGATION (Public) -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-chess-queen"></i> AFMIND Draughts</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navTabs">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navTabs">
+                <ul class="navbar-nav me-auto" id="mainTabs">
+                    <li class="nav-item"><a class="nav-link active" data-view="dashboard" href="#dashboard"><i class="fas fa-home me-1"></i>Nyumbani</a></li>
+                    <li class="nav-item"><a class="nav-link" data-view="register" href="#register"><i class="fas fa-user-plus me-1"></i>Sajili Mchezaji</a></li>
+                    <li class="nav-item"><a class="nav-link" data-view="teams" href="#teams"><i class="fas fa-users me-1"></i>Timu</a></li>
+                    <!-- Results and Admin hidden via CSS -->
+                    <li class="nav-item"><a class="nav-link" data-view="ranking" href="#ranking"><i class="fas fa-trophy me-1"></i>Ranking</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    <span id="connectionBadge" class="offline-dot" title="Hali ya muunganisho"></span>
+                    <!-- loginBtn, logoutBtn, userDisplay hidden via CSS -->
+                    <button id="installAppBtn" class="btn btn-outline-light btn-sm rounded-pill px-3 d-none" style="display:none;"><i class="fas fa-download me-1"></i> Sakinisha App</button>
+                    <!-- VVIP PORTAL BUTTON -->
+                    <button class="vvip-btn" id="vvipBtn"><i class="fas fa-crown"></i><span>VVIP Portal</span></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-3">
+
+        <!-- AD BANNER -->
+        <div class="ad-scroll">
+            <div class="ad-scroll-track">
+                <span class="ad-item"><i class="fas fa-bullhorn"></i> <span class="highlight">🔥</span> AFMIND CUP 2026 – JIANDIKISHE SASA! <span class="highlight-gold">✦</span> TANGAZA NASI: +255 744 100 918 <span class="highlight">✦</span> MOFULI MULTI BUSINESS SPORTS PROMOTION</span>
+                <span class="ad-item"><i class="fas fa-star"></i> <span class="highlight-gold">🏆</span> LIGI YA DRAUGHTS TANZANIA – MSIMU 2026/2027 <span class="highlight">✦</span> WASHIRIKI NA TIMU YAKO!</span>
+                <span class="ad-item"><i class="fas fa-trophy"></i> <span class="highlight">💰</span> ZAWADI KUBWA – JIUNGE NA AFMIND LEAGUE <span class="highlight-gold">✦</span> REGISTER PLAYER / TEAM</span>
+                <span class="ad-item"><i class="fas fa-bullhorn"></i> <span class="highlight">🔥</span> AFMIND CUP 2026 – JIANDIKISHE SASA! <span class="highlight-gold">✦</span> TANGAZA NASI: +255 744 100 918 <span class="highlight">✦</span> MOFULI MULTI BUSINESS SPORTS PROMOTION</span>
+                <span class="ad-item"><i class="fas fa-star"></i> <span class="highlight-gold">🏆</span> LIGI YA DRAUGHTS TANZANIA – MSIMU 2026/2027 <span class="highlight">✦</span> WASHIRIKI NA TIMU YAKO!</span>
+                <span class="ad-item"><i class="fas fa-trophy"></i> <span class="highlight">💰</span> ZAWADI KUBWA – JIUNGE NA AFMIND LEAGUE <span class="highlight-gold">✦</span> REGISTER PLAYER / TEAM</span>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ===== TAB: DASHBOARD ===== -->
+        <!-- ============================================================ -->
+        <div class="view-tab active" id="dashboard">
+
+            <!-- HERO SLIDESHOW -->
+            <div class="home-hero">
+                <div class="hero-slideshow">
+                    <img src="https://i.postimg.cc/bDM3XDMT/Whats-App-Image-2026-06-29-at-23-33-48.jpg" class="hero-slide active" alt="Slide 1">
+                    <img src="https://i.postimg.cc/HV19QgCj/Whats-App-Image-2026-06-28-at-20-39-36-1.jpg" class="hero-slide" alt="Slide 2">
+                    <img src="https://i.postimg.cc/QFx5bNYF/Capture-1.png" class="hero-slide" alt="Slide 3">
+                    <img src="https://i.postimg.cc/1npfSbY8/Whats-App-Image-2026-06-28-at-20-39-36-2.jpg" class="hero-slide" alt="Slide 4">
+                    <img src="https://i.postimg.cc/Bt4x6C5d/Capture-2.png" class="hero-slide" alt="Slide 5">
+                    <img src="https://i.postimg.cc/T53LcCQz/Capture-3.png" class="hero-slide" alt="Slide 6">
+                </div>
+                <div class="hero-overlay">
+                    <div class="hero-content">
+                        <div class="home-logo-row" style="justify-content:flex-start; margin:0 0 8px 0; gap:16px;">
+                            <img src="https://i.postimg.cc/D4FWtW88/LOGO.png" alt="MOFULI Logo" style="max-height:60px;">
+                        </div>
+                        <h1>AFMIND <span class="gold">DRAUGHTS</span> LEAGUE</h1>
+                        <p>Mashindano ya kitaifa ya Draughts yanayoletwa na <strong>MOFULI Multi Business &amp; Sports Promotion</strong> – kuleta fursa, vipaji na ushindani wa hali ya juu Tanzania.</p>
+                        <div class="hero-badge"><i class="fas fa-calendar-alt me-1"></i> Msimu 2026/2027</div>
+                        <div class="hero-badge" style="margin-left:10px; background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.2); color:#fff;"><i class="fas fa-map-marker-alt me-1"></i> Mikoa 31</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MINI STATS -->
+            <div class="home-stats-mini" id="homeMiniStats">
+                <div class="mini-stat"><div class="num" id="hStatPlayers">0</div><div class="lbl">Wachezaji</div></div>
+                <div class="mini-stat"><div class="num" id="hStatTeams">0</div><div class="lbl">Timu</div></div>
+                <div class="mini-stat"><div class="num" id="hStatMatches">0</div><div class="lbl">Mechi</div></div>
+                <div class="mini-stat"><div class="num" id="hStatRegions">0</div><div class="lbl">Mikoa</div></div>
+            </div>
+
+            <!-- ABOUT THE COMPETITION -->
+            <div class="card card-dashboard mb-4">
+                <div class="card-body">
+                    <h4 class="section-title"><i class="fas fa-trophy text-warning me-2"></i>Mashindano – AFMIND CUP</h4>
+                    <p><strong>AFMIND CUP</strong> ni mashindano makubwa ya kitaifa ya mchezo wa <strong>Draughts (Draft)</strong> yanayoandaliwa na <strong>MOFULI Multi Business &amp; Sports Promotion (MMSP)</strong>, chini ya usimamizi wa BMT (BRELA Reg. No. 630591, NSC 15069).</p>
+                    <p>Lengo kuu ni kukuza mchezo wa Draft Tanzania, kuibua vipaji, kuongeza ushiriki wa wananchi katika michezo, na kujenga mfumo wa kitaifa wa viwango (Rating) na Rankings za wachezaji.</p>
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-3 col-6"><div class="bg-light p-3 rounded text-center"><i class="fas fa-layer-group text-primary fa-2x"></i><br><strong>Ngazi</strong><br><span class="badge bg-primary">Mkoa</span> <span class="badge bg-info">Kanda</span> <span class="badge bg-warning">Taifa</span></div></div>
+                        <div class="col-md-3 col-6"><div class="bg-light p-3 rounded text-center"><i class="fas fa-flag-checkered text-success fa-2x"></i><br><strong>Mfumo</strong><br><span>Mashindano ya mzunguko</span></div></div>
+                        <div class="col-md-3 col-6"><div class="bg-light p-3 rounded text-center"><i class="fas fa-star text-warning fa-2x"></i><br><strong>Zawadi</strong><br><span>Kwa mujibu wa tangazo rasmi</span></div></div>
+                        <div class="col-md-3 col-6"><div class="bg-light p-3 rounded text-center"><i class="fas fa-users-cog text-info fa-2x"></i><br><strong>Washiriki</strong><br><span>Wachezaji binafsi + Timu</span></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MISSION, VISION, VALUES -->
+            <div class="card card-dashboard mb-4">
+                <div class="card-body">
+                    <h4 class="section-title"><i class="fas fa-bullseye text-danger me-2"></i>Dira, Dhima na Thamani</h4>
+                    <div class="mission-vision-grid">
+                        <div class="mv-card"><div class="mv-icon"><i class="fas fa-eye"></i></div><h5>Dira (Vision)</h5><p>Kuwa ligi bora zaidi ya Draughts barani Afrika, inayojulikana kwa ubora, ushindani na maadili, ikiwa chachu ya maendeleo ya michezo nchini Tanzania.</p></div>
+                        <div class="mv-card"><div class="mv-icon"><i class="fas fa-bullseye"></i></div><h5>Dhima (Mission)</h5><p>Kukuza na kuendeleza mchezo wa Draughts kwa kuunda mazingira bora ya ushindani, kutoa fursa kwa wachezaji wa ngazi zote, na kujenga mfumo wa kitaifa wa viwango na rankings.</p></div>
+                    </div>
+                    <div class="mt-3">
+                        <h6 class="fw-bold"><i class="fas fa-gem text-warning me-2"></i>Thamani Zetu (Values)</h6>
+                        <div class="values-list">
+                            <span class="value-tag"><i class="fas fa-check-circle"></i> Uadilifu</span>
+                            <span class="value-tag"><i class="fas fa-check-circle"></i> Ushindani wa Haki</span>
+                            <span class="value-tag"><i class="fas fa-check-circle"></i> Maendeleo ya Vipaji</span>
+                            <span class="value-tag"><i class="fas fa-check-circle"></i> Ushirikishwaji</span>
+                            <span class="value-tag"><i class="fas fa-check-circle"></i> Ubora</span>
+                            <span class="value-tag"><i class="fas fa-check-circle"></i> Uwazi</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOUNDER -->
+            <div class="card card-dashboard mb-4">
+                <div class="card-body text-center">
+                    <h4 class="section-title text-center"><i class="fas fa-user-tie text-primary me-2"></i>Mwanzilishi</h4>
+                    <div class="founder-card d-inline-block text-start" style="max-width:720px; width:100%;">
+                        <div class="d-flex flex-wrap align-items-center gap-4">
+                            <img src="https://i.postimg.cc/nMjpJVvP/Whats-App-Image-2026-06-23-at-21-53-43.jpg" alt="Erick R Mashayo" class="founder-img">
+                            <div>
+                                <div class="founder-name">Erick R. Mashayo</div>
+                                <div class="founder-title"><i class="fas fa-crown me-1"></i> Mwanzilishi &amp; Mkurugenzi – AFMIND CUP</div>
+                                <div class="founder-bio">
+                                    <p class="mb-2"><i class="fas fa-quote-left text-warning me-1"></i>
+                                        "AFMIND CUP ni zaidi ya mashindano – ni jukwaa la kuleta mabadiliko kupitia michezo, kuunganisha wachezaji, kukuza vipaji na kujenga taswira ya Taifa katika mchezo wa Draughts."
+                                    </p>
+                                    <p><strong>Erick R. Mashayo</strong> ni mjasiriamali na mpenda michezo anayeamini katika nguvu ya michezo kama chachu ya maendeleo ya jamii. Yeye ndiye mbunifu na mwanzilishi wa AFMIND CUP, na anaongoza juhudi za kuleta mchezo wa Draughts katika ngazi ya kitaifa na kimataifa.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MOFULI LOGO & CREDITS -->
+            <div class="card card-dashboard mb-4">
+                <div class="card-body text-center">
+                    <div class="home-logo-row">
+                        <img src="https://i.postimg.cc/D4FWtW88/LOGO.png" alt="MOFULI Logo" style="max-height:80px;">
+                    </div>
+                    <p class="text-muted mt-2"><strong>MOFULI Multi Business &amp; Sports Promotion</strong><br>BRELA Reg. No. 630591 &bull; BMT Certificate No. NSC 15069</p>
+                    <p class="small text-muted">&copy; 2026 AFMIND CUP – Haki zote zimehifadhiwa.</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ===== TAB: REGISTER ===== -->
+        <!-- ============================================================ -->
+        <div class="view-tab" id="register">
+            <div class="neon-board">
+                <div class="neon-text-wrapper">
+                    <span class="marquee">
+                        <i class="fas fa-microchip"></i> <span>ADVIRTISE HERE</span> <i class="fas fa-bolt"></i>
+                        <span>✦</span> AFMIND DRAUGHTS LEAGUE <span>✦</span> REGISTER PLAYER <span>✦</span>
+                        <i class="fas fa-robot"></i> <span>ADVIRTISE HERE</span> <i class="fas fa-microchip"></i>
+                        <span>✦</span> TANGAZA NASI +255 744 100 918 <span>✦</span>
+                        <i class="fas fa-bolt"></i> <span>ADVIRTISE HERE</span> <i class="fas fa-robot"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="card card-dashboard">
+                <div class="card-body">
+                    <h4><i class="fas fa-user-plus text-primary me-2"></i>Sajili Mchezaji</h4>
+                    <hr>
+                    <form id="playerForm" novalidate>
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Picha ya Mshiriki <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="file" class="form-control" id="playerPhoto" accept="image/*">
+                                    <button class="btn btn-outline-secondary" type="button" id="cameraBtnPlayer"><i class="fas fa-camera"></i></button>
+                                </div>
+                                <div id="photoPreviewContainer" class="text-center mt-1">
+                                    <img id="photoPreview" src="" alt="Hakuna picha" class="photo-preview" style="display:none;">
+                                    <p class="small text-muted">Picha itaonekana hapa</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Title</label>
+                                <select id="pTitle" class="form-select">
+                                    <option value="">-Chagua-</option>
+                                    <option value="Mr.">Mr.</option>
+                                    <option value="Mrs.">Mrs.</option>
+                                    <option value="Ms.">Ms.</option>
+                                    <option value="Prof">Prof</option>
+                                    <option value="Eng">Eng</option>
+                                    <option value="Dr">Dr</option>
+                                    <option value="CPA">CPA</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Jina Kamili <span class="text-danger">*</span></label>
+                                <input type="text" id="pFullName" class="form-control" placeholder="Andika majina yako kamili" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Jina maarufu (Utani)</label>
+                                <input type="text" id="pNickname" class="form-control" placeholder="Jina la utani">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Jinsia <span class="text-danger">*</span></label>
+                                <select id="pGender" class="form-select">
+                                    <option value="Male">Mwanaume</option>
+                                    <option value="Female">Mwanamke</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Utaifa <span class="text-danger">*</span></label>
+                                <select id="pNationality" class="form-select">
+                                    <option value="Tanzania">Tanzania</option>
+                                    <option value="Kenya">Kenya</option>
+                                    <option value="Uganda">Uganda</option>
+                                    <option value="Rwanda">Rwanda</option>
+                                    <option value="Burundi">Burundi</option>
+                                    <option value="South Sudan">South Sudan</option>
+                                    <option value="Other">Nyingine</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 conditional-group tz-fields" id="tzRegionWrapper">
+                                <label class="form-label">Mkoa <span class="text-danger">*</span></label>
+                                <select id="pRegion" class="form-select">
+                                    <option value="Dar es Salaam">Dar es Salaam</option>
+                                    <option value="Arusha">Arusha</option>
+                                    <option value="Dodoma">Dodoma</option>
+                                    <option value="Mwanza">Mwanza</option>
+                                    <option value="Mbeya">Mbeya</option>
+                                    <option value="Morogoro">Morogoro</option>
+                                    <option value="Tanga">Tanga</option>
+                                    <option value="Kilimanjaro">Kilimanjaro</option>
+                                    <option value="Iringa">Iringa</option>
+                                    <option value="Kagera">Kagera</option>
+                                    <option value="Mara">Mara</option>
+                                    <option value="Manyara">Manyara</option>
+                                    <option value="Njombe">Njombe</option>
+                                    <option value="Pwani">Pwani</option>
+                                    <option value="Rukwa">Rukwa</option>
+                                    <option value="Ruvuma">Ruvuma</option>
+                                    <option value="Shinyanga">Shinyanga</option>
+                                    <option value="Simiyu">Simiyu</option>
+                                    <option value="Singida">Singida</option>
+                                    <option value="Songwe">Songwe</option>
+                                    <option value="Tabora">Tabora</option>
+                                    <option value="Katavi">Katavi</option>
+                                    <option value="Geita">Geita</option>
+                                    <option value="Lindi">Lindi</option>
+                                    <option value="Mtwara">Mtwara</option>
+                                    <option value="Unguja Kaskazini">Unguja Kaskazini</option>
+                                    <option value="Unguja Kusini">Unguja Kusini</option>
+                                    <option value="Mjini Magharibi">Mjini Magharibi</option>
+                                    <option value="Pemba Kaskazini">Pemba Kaskazini</option>
+                                    <option value="Pemba Kusini">Pemba Kusini</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 conditional-group tz-fields" id="tzDistrictWrapper">
+                                <label class="form-label">Wilaya</label>
+                                <input type="text" id="pDistrict" class="form-control" placeholder="Wilaya">
+                            </div>
+                            <div class="col-md-4 conditional-group tz-fields" id="tzStreetWrapper">
+                                <label class="form-label">Mtaa</label>
+                                <input type="text" id="pStreet" class="form-control" placeholder="Mtaa">
+                            </div>
+                            <div class="col-md-12 conditional-group non-tz-fields" id="addressDetailsWrapper" style="display:none;">
+                                <label class="form-label">Maelezo ya Anwani <span class="text-danger">*</span></label>
+                                <textarea id="pAddressDetails" class="form-control" rows="2" placeholder="Andika anwani kamili (Mji, Nchi, n.k.)"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tarehe ya kuzaliwa (dd/mm/yyyy)</label>
+                                <input type="text" id="pDob" class="form-control" placeholder="dd/mm/yyyy" maxlength="10">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Aina ya Kitambulisho <span class="text-danger">*</span></label>
+                                <select id="pIdType" class="form-select">
+                                    <option value="NIN">NIDA (National ID)</option>
+                                    <option value="Passport">Passport</option>
+                                    <option value="Voter ID">Voter ID</option>
+                                    <option value="Driving Licence">Driving Licence</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Namba ya Kitambulisho <span class="text-danger">*</span></label>
+                                <input type="text" id="pIdNumber" class="form-control" placeholder="Ingiza namba kulingana na aina" required>
+                                <small id="idFormatHint" class="form-text id-hint">Muundo: 19630202-11101-00001-18</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nakala ya Kitambulisho <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="file" id="pIdUpload" class="form-control" accept="image/*">
+                                    <button class="btn btn-outline-secondary" type="button" id="cameraBtnId"><i class="fas fa-camera"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Namba ya Simu <span class="text-danger">*</span></label>
+                                <input type="tel" id="pPhone" class="form-control" placeholder="Andika namba yako" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Barua Pepe</label>
+                                <input type="email" id="pEmail" class="form-control" placeholder="email@example.com">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Aina ya Mshiriki <span class="text-danger">*</span></label>
+                                <select id="pParticipation" class="form-select">
+                                    <option value="Individual">Individual / Pekee</option>
+                                    <option value="Team">Team / Timu</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="teamNameWrapper" style="display:none;">
+                                <label class="form-label">Jina la Timu</label>
+                                <input type="text" id="pTeamName" class="form-control" placeholder="Jina la timu unayoiwakilisha">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Uzoefu (Miaka) <span class="text-danger">*</span></label>
+                                <select id="pExperience" class="form-select">
+                                    <option value="Chini ya mwaka 1">Chini ya mwaka 1</option>
+                                    <option value="1-3 Miaka">1-3 Miaka</option>
+                                    <option value="3+ Miaka">3+ Miaka</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Aina ya Draughts <span class="text-danger">*</span></label>
+                                <select id="pDraughtsType" class="form-select">
+                                    <option value="French Style">French Style</option>
+                                    <option value="British Style">British Style</option>
+                                    <option value="Both">Both</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Kiwango cha uchezaji <span class="text-danger">*</span></label>
+                                <select id="pLevel" class="form-select">
+                                    <option value="Beginner">Beginner</option>
+                                    <option value="Intermediate">Intermediate</option>
+                                    <option value="Professional">Professional</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 conditional-group edu-fields" id="educationWrapper" style="display:none;">
+                                <label class="form-label">Elimu <span class="text-danger">*</span></label>
+                                <select id="pEducation" class="form-select">
+                                    <option value="Primary Education">Primary Education</option>
+                                    <option value="Secondary Education">Secondary Education</option>
+                                    <option value="Certificate">Certificate</option>
+                                    <option value="Diploma">Diploma</option>
+                                    <option value="Degree">Degree</option>
+                                    <option value="Postgraduate">Postgraduate</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Hali ya Ajira <span class="text-danger">*</span></label>
+                                <select id="pEmployment" class="form-select">
+                                    <option value="Employed">Employed / Nimeajiriwa</option>
+                                    <option value="Self-Employed">Self-Employed / Nimejiajiri</option>
+                                    <option value="Unemployed">Unemployed / Sina Ajira</option>
+                                    <option value="Student">Student / Mwanafunzi</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="jobTitleWrapper">
+                                <label class="form-label">Kazi unayofanya</label>
+                                <input type="text" id="pJobTitle" class="form-control" placeholder="Jina la kazi">
+                            </div>
+                            <div class="col-md-6 conditional-group edu-fields" id="schoolWrapper" style="display:none;">
+                                <label class="form-label">Shule / Chuo <span class="text-danger">*</span></label>
+                                <input type="text" id="pSchool" class="form-control" placeholder="Shule au chuo">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Je, una ulemavu? <span class="text-danger">*</span></label>
+                                <select id="pDisability" class="form-select">
+                                    <option value="No">Hapana</option>
+                                    <option value="Yes">Ndiyo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12" id="disabilityDetailsWrapper" style="display:none;">
+                                <label class="form-label">Maelezo ya ulemavu <span class="text-danger">*</span></label>
+                                <textarea id="pDisabilityDetails" class="form-control" rows="2" placeholder="Andika maelezo ya ulemavu wako…"></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Jina la mtu wa dharura <span class="text-danger">*</span></label>
+                                <input type="text" id="pEmergencyName" class="form-control" placeholder="Jina kamili" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Uhusiano <span class="text-danger">*</span></label>
+                                <select id="pEmergencyRelation" class="form-select">
+                                    <option value="Parent">Mzazi</option>
+                                    <option value="Guardian">Mlezi</option>
+                                    <option value="Relative">Ndugu</option>
+                                    <option value="Friend">Rafiki</option>
+                                    <option value="Spouse">Mwenza</option>
+                                    <option value="Sponsor">Mdhamini</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Namba ya simu ya dharura <span class="text-danger">*</span></label>
+                                <input type="tel" id="pEmergencyPhone" class="form-control" placeholder="Andika namba ya dharura" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Nakala ya Kitambulisho cha Mtu wa Dharura <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="file" id="pEmergencyIdUpload" class="form-control" accept="image/*">
+                                    <button class="btn btn-outline-secondary" type="button" id="cameraBtnEmergency"><i class="fas fa-camera"></i></button>
+                                </div>
+                            </div>
+                            <!-- SIGNATURE: EMERGENCY CONTACT (visible) -->
+                            <div class="col-md-12">
+                                <label class="form-label">Sahihi ya Mtu wa Dharura <span class="text-danger">*</span></label>
+                                <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" id="clearSigBtn"><i class="fas fa-eraser me-1"></i>Futa Sahihi</button>
+                                </div>
+                                <input type="hidden" id="signatureData" value="">
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="agreeTerms">
+                                    <label class="form-check-label" for="agreeTerms">Nimesoma na kukubali <a href="#" id="openTermsLink" style="text-decoration:underline; color:#1a3c6e;">Masharti na Makubaliano ya Mchezaji</a></label>
+                                </div>
+                                <small id="termsError" class="text-danger d-none">Lazima ukubali Masharti na Makubaliano kabla ya kusajiliwa.</small>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-submit" id="registerBtn"><i class="fas fa-save me-1"></i> Sajili Mchezaji</button>
+                            </div>
+                            <div id="regMsg" class="col-12"></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ===== TAB: TEAMS ===== -->
+        <!-- ============================================================ -->
+        <div class="view-tab" id="teams">
+            <div class="neon-board">
+                <div class="neon-text-wrapper">
+                    <span class="marquee">
+                        <i class="fas fa-microchip"></i> <span>ADVIRTISE HERE</span> <i class="fas fa-bolt"></i>
+                        <span>✦</span> AFMIND TEAM REGISTRATION <span>✦</span> JOIN THE LEAGUE <span>✦</span>
+                        <i class="fas fa-robot"></i> <span>ADVIRTISE HERE</span> <i class="fas fa-microchip"></i>
+                        <span>✦</span> TANGAZA NASI +255 744 100 918 <span>✦</span>
+                        <i class="fas fa-bolt"></i> <span>ADVIRTISE HERE</span> <i class="fas fa-robot"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="card card-dashboard">
+                <div class="card-body">
+                    <h4><i class="fas fa-users text-success me-2"></i>Sajili Timu</h4>
+                    <hr>
+                    <form id="teamForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Jina la Timu <span class="text-danger">*</span></label>
+                                <input type="text" id="teamName" class="form-control" placeholder="Jina la timu" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Mkoa <span class="text-danger">*</span></label>
+                                <select id="teamRegion" class="form-select">
+                                    <option value="Dar es Salaam">Dar es Salaam</option>
+                                    <option value="Arusha">Arusha</option>
+                                    <option value="Dodoma">Dodoma</option>
+                                    <option value="Mwanza">Mwanza</option>
+                                    <option value="Mbeya">Mbeya</option>
+                                    <option value="Morogoro">Morogoro</option>
+                                    <option value="Tanga">Tanga</option>
+                                    <option value="Kilimanjaro">Kilimanjaro</option>
+                                    <option value="Iringa">Iringa</option>
+                                    <option value="Kagera">Kagera</option>
+                                    <option value="Mara">Mara</option>
+                                    <option value="Manyara">Manyara</option>
+                                    <option value="Njombe">Njombe</option>
+                                    <option value="Pwani">Pwani</option>
+                                    <option value="Rukwa">Rukwa</option>
+                                    <option value="Ruvuma">Ruvuma</option>
+                                    <option value="Shinyanga">Shinyanga</option>
+                                    <option value="Simiyu">Simiyu</option>
+                                    <option value="Singida">Singida</option>
+                                    <option value="Songwe">Songwe</option>
+                                    <option value="Tabora">Tabora</option>
+                                    <option value="Katavi">Katavi</option>
+                                    <option value="Geita">Geita</option>
+                                    <option value="Lindi">Lindi</option>
+                                    <option value="Mtwara">Mtwara</option>
+                                    <option value="Unguja Kaskazini">Unguja Kaskazini</option>
+                                    <option value="Unguja Kusini">Unguja Kusini</option>
+                                    <option value="Mjini Magharibi">Mjini Magharibi</option>
+                                    <option value="Pemba Kaskazini">Pemba Kaskazini</option>
+                                    <option value="Pemba Kusini">Pemba Kusini</option>
+                                </select>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <h6 class="fw-bold text-primary"><i class="fas fa-user-check me-1"></i>Wachezaji Waliosajiliwa (5) <span class="text-danger">*</span></h6>
+                                <small class="text-muted">Ingiza Player ID zilizosajiliwa kwenye mfumo wa AFMIND</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Mchezaji 1 <span class="text-danger">*</span></label>
+                                <input type="text" id="teamP1" class="form-control team-player-id" placeholder="ADL-INV-DAR-00001" required>
+                                <span id="teamP1Status" class="id-validation-icon"></span>
+                                <small class="form-text text-muted">Player ID iliyosajiliwa</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Mchezaji 2 <span class="text-danger">*</span></label>
+                                <input type="text" id="teamP2" class="form-control team-player-id" placeholder="ADL-INV-DAR-00002" required>
+                                <span id="teamP2Status" class="id-validation-icon"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Mchezaji 3 <span class="text-danger">*</span></label>
+                                <input type="text" id="teamP3" class="form-control team-player-id" placeholder="ADL-INV-DAR-00003" required>
+                                <span id="teamP3Status" class="id-validation-icon"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Mchezaji 4 <span class="text-danger">*</span></label>
+                                <input type="text" id="teamP4" class="form-control team-player-id" placeholder="ADL-INV-DAR-00004" required>
+                                <span id="teamP4Status" class="id-validation-icon"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Mchezaji 5 <span class="text-danger">*</span></label>
+                                <input type="text" id="teamP5" class="form-control team-player-id" placeholder="ADL-INV-DAR-00005" required>
+                                <span id="teamP5Status" class="id-validation-icon"></span>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <h6 class="fw-bold text-warning"><i class="fas fa-user-clock me-1"></i>Wachezaji wa Akiba (3) - Hiari</h6>
+                                <small class="text-muted">Player ID za wachezaji wa akiba (zikipatikana)</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Akiba 1</label>
+                                <input type="text" id="teamR1" class="form-control team-player-id" placeholder="ADL-INV-DAR-00006">
+                                <span id="teamR1Status" class="id-validation-icon"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Akiba 2</label>
+                                <input type="text" id="teamR2" class="form-control team-player-id" placeholder="ADL-INV-DAR-00007">
+                                <span id="teamR2Status" class="id-validation-icon"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Akiba 3</label>
+                                <input type="text" id="teamR3" class="form-control team-player-id" placeholder="ADL-INV-DAR-00008">
+                                <span id="teamR3Status" class="id-validation-icon"></span>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <hr>
+                                <h6 class="fw-bold text-success"><i class="fas fa-crown me-1"></i>Nahodha wa Timu (Captain)</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nakala ya Kitambulisho cha Nahodha <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="file" id="teamCaptainIdUpload" class="form-control" accept="image/*">
+                                    <button class="btn btn-outline-secondary" type="button" id="cameraBtnCaptain"><i class="fas fa-camera"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Sahihi ya Nahodha <span class="text-danger">*</span></label>
+                                <canvas id="sigCaptain" class="signature-canvas"></canvas>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill mt-1" id="clearSigCaptain"><i class="fas fa-eraser me-1"></i>Futa</button>
+                                <input type="hidden" id="sigCaptainData">
+                            </div>
+                            <div class="col-12 mt-3">
+                                <button type="submit" class="btn btn-submit" id="teamBtn"><i class="fas fa-save me-1"></i> Sajili Timu</button>
+                            </div>
+                            <div id="teamMsg" class="col-12"></div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ===== TAB: RANKING ===== -->
+        <!-- ============================================================ -->
+        <div class="view-tab" id="ranking">
+            <div class="neon-board">
+                <div class="neon-text-wrapper">
+                    <span class="marquee">
+                        <i class="fas fa-microchip"></i> <span>ADVIRTISE HERE</span> <i class="fas fa-bolt"></i>
+                        <span>✦</span> AFMIND RANKING – OVERALL &amp; CATEGORIES <span>✦</span>
+                        <i class="fas fa-robot"></i> <span>ADVIRTISE HERE</span> <i class="fas fa-microchip"></i>
+                        <span>✦</span> TANGAZA NASI +255 744 100 918 <span>✦</span>
+                        <i class="fas fa-bolt"></i> <span>ADVIRTISE HERE</span> <i class="fas fa-robot"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="card card-dashboard">
+                <div class="card-body">
+                    <h4><i class="fas fa-trophy text-warning me-2"></i>Viwango vya Ligi</h4>
+                    <hr>
+                    <ul class="nav nav-tabs" id="rankingTabs">
+                        <li class="nav-item"><a class="nav-link active" data-rank-tab="overall" href="#rankOverall">Overall</a></li>
+                        <li class="nav-item"><a class="nav-link" data-rank-tab="individual" href="#rankIndividual">Wachezaji Binafsi</a></li>
+                        <li class="nav-item"><a class="nav-link" data-rank-tab="teams" href="#rankTeams">Timu</a></li>
+                        <li class="nav-item"><a class="nav-link" data-rank-tab="regions" href="#rankRegions">Mikoa</a></li>
+                    </ul>
+                    <div class="tab-content mt-3">
+                        <div class="rank-view active" id="rankOverall">
+                            <div class="row">
+                                <div class="col-md-4"><h6>Wachezaji Bora</h6><div id="overallTopPlayers" class="list-group"></div></div>
+                                <div class="col-md-4"><h6>Timu Bora</h6><div id="overallTopTeams" class="list-group"></div></div>
+                                <div class="col-md-4"><h6>Mikoa Bora</h6><div id="overallTopRegions" class="list-group"></div></div>
+                            </div>
+                        </div>
+                        <div class="rank-view" id="rankIndividual">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead><tr><th>#</th><th>Picha</th><th>Player ID</th><th>Jina Kamili</th><th>Timu</th><th>Mkoa</th><th>Kiwango</th><th>Mechi</th><th>Ushindi</th><th>Sare</th><th>Hasara</th><th>Pointi</th></tr></thead>
+                                    <tbody id="individualRanking"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="rank-view" id="rankTeams">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead><tr><th>#</th><th>Msimbo</th><th>Jina la Timu</th><th>Mkoa</th><th>Wachezaji</th><th>Pointi Jumla</th></tr></thead>
+                                    <tbody id="teamRanking"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="rank-view" id="rankRegions">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead><tr><th>#</th><th>Mkoa</th><th>Wachezaji</th><th>Mechi</th><th>Ushindi</th><th>Sare</th><th>Hasara</th><th>Wastani wa Pointi</th></tr></thead>
+                                    <tbody id="regionRanking"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ===== RESULTS AND ADMIN SECTIONS HIDDEN VIA CSS ===== -->
+        <!-- They are still in the DOM but hidden with display:none -->
+        <!-- ============================================================ -->
+
+    </div>
+
+    <!-- ===== MODALS (shared) ===== -->
+    <!-- Camera Modal -->
+    <div class="modal fade" id="cameraModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white"><h5 id="cameraModalLabel"><i class="fas fa-camera me-2"></i>Piga Picha</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body text-center bg-black"><video id="cameraVideo" autoplay playsinline></video><canvas id="cameraCanvas" style="display:none;"></canvas></div>
+                <div class="modal-footer"><button class="btn btn-danger rounded-pill" id="capturePhotoBtn"><i class="fas fa-camera me-1"></i>Piga Picha</button><button class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Funga</button></div>
+            </div>
+        </div>
+    </div>
+    <!-- Player Preview Modal -->
+    <div class="modal fade" id="playerPreviewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white"><h5 class="modal-title"><i class="fas fa-user-circle me-2"></i>Taarifa za Mchezaji</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body" id="previewContent"></div>
+                <div class="modal-footer"><button class="btn btn-primary rounded-pill" id="printPlayerBtn"><i class="fas fa-print me-1"></i>Chapisha</button><button class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Funga</button></div>
+            </div>
+        </div>
+    </div>
+    <!-- Team Preview Modal -->
+    <div class="modal fade" id="teamPreviewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white"><h5 class="modal-title"><i class="fas fa-users me-2"></i>Taarifa za Timu</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body" id="teamPreviewContent"></div>
+                <div class="modal-footer"><button class="btn btn-success rounded-pill" id="printTeamBtn"><i class="fas fa-print me-1"></i>Chapisha</button><button class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Funga</button></div>
+            </div>
+        </div>
+    </div>
+    <!-- Rules Modal -->
+    <div class="modal fade" id="rulesModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white"><h5 class="modal-title"><i class="fas fa-gavel me-2"></i>MASHARTI NA MAKUBALIANO YA MCHEZAJI</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body" style="max-height:60vh; overflow-y:auto; white-space:pre-line; font-size:0.9rem;">
+                    AFMIND CUP TANZANIA
+                    KANUNI RASMI ZA MASHINDANO
+                    Toleo la 2026/2027
+                    Imeandaliwa na:
+                    MOFULI MULTI BUSINESS &amp; SPORTS PROMOTION (MMSP)
+                    BRELA Reg. No. 630591
+                    BMT Certificate No. NSC 15069
+                    Dar es Salaam, Tanzania
+                    JINA LA MASHINDANO
+                    1.1 Mashindano haya yatafahamika rasmi kwa jina la AFMIND CUP.
+                    1.2 Endapo kutakuwa na Mdhamini Mkuu, jina la mashindano linaweza kubadilishwa kwa kuambatanisha jina la mdhamini kwa mujibu wa mkataba wa udhamini, bila kuondoa umiliki wa AFMIND CUP.
+                    MMILIKI WA MASHINDANO
+                    2.1 AFMIND CUP ni mali ya MOFULI Multi Business &amp; Sports Promotion (MMSP).
+                    2.2 MOFULI ndiyo yenye mamlaka kamili ya kuandaa, kuratibu, kusimamia na kuendesha mashindano haya.
+                    2.3 MOFULI itakuwa na mamlaka ya mwisho kuhusu masuala yote ya mashindano isipokuwa pale sheria za nchi zitakaposema vinginevyo.
+                    MALENGO YA MASHINDANO
+                    a) Kukuza mchezo wa Draft Tanzania.
+                    b) Kuibua na kuendeleza vipaji.
+                    c) Kuongeza ushiriki wa wananchi katika michezo.
+                    d) Kukuza ajira na fursa za kiuchumi kupitia michezo.
+                    e) Kuvutia wadhamini, wawekezaji na washirika wa maendeleo.
+                    f) Kuandaa mfumo wa kitaifa wa viwango (Rating) na Rankings za wachezaji.
+                    NGAZI ZA MASHINDANO
+                    a) Mkoa
+                    b) Kanda
+                    c) Taifa
+                    HAKI NA MAMLAKA YA MOFULI
+                    MOFULI ina haki ya:
+                    a) Kuweka ratiba za mashindano.
+                    b) Kuteua marefa, waratibu na maafisa wa mashindano.
+                    c) Kurekebisha ratiba.
+                    d) Kusimamisha au kufuta ushiriki wa yeyote anayeekiuka kanuni.
+                    e) Kutangaza washindi rasmi.
+                    f) Kusimamia mfumo wa Ranking na Rating.
+                    USTAHIKI WA KUSHIRIKI
+                    6.1 Awe amesajiliwa rasmi.
+                    6.2 Awe amekubaliana na kanuni hizi.
+                    6.3 Awe ametimiza masharti ya msimu husika.
+                    6.4 Asiwe amefungiwa kushiriki mashindano yoyote ya AFMIND CUP.
+                    USAJILI WA WACHEZAJI
+                    7.1 Usajili utafanyika kupitia mfumo rasmi wa AFMIND CUP.
+                    7.2 Kila mchezaji atapewa AFMIND ID ya kipekee.
+                    7.3 Mchezaji atawajibika kwa usahihi wa taarifa zake.
+                    7.4 Taarifa za uongo zinaweza kusababisha kufutiwa ushiriki.
+                    USAJILI WA MAREFA
+                    8.1 Refa atasajiliwa na kuidhinishwa na MOFULI.
+                    8.2 Refa atazingatia maadili ya kazi yake.
+                    8.3 Refa haruhusiwi kupokea rushwa au upendeleo wa aina yoyote.
+                    USAJILI WA WARATIBU
+                    9.1 Waratibu wataidhinishwa na MOFULI.
+                    9.2 Waratibu watawajibika kwa utekelezaji wa mashindano katika maeneo yao.
+                    ADA ZA USAJILI
+                    10.1 Ada zitatangazwa kabla ya kuanza kwa msimu.
+                    10.2 Ada zilizolipwa hazitarejeshwa isipokuwa MOFULI iamue vinginevyo.
+                    UTAMBULISHO WA WASHIRIKI
+                    11.1 Mshiriki anaweza kuombwa kuwasilisha kitambulisho halali.
+                    11.2 Kushindwa kuthibitisha utambulisho kunaweza kuathiri ushiriki wake.
+                    MFUMO WA RATING NA RANKING
+                    12.1 AFMIND CUP itatumia mfumo rasmi wa Rating.
+                    12.2 Matokeo yote yataathiri Rating za wachezaji.
+                    12.3 Ranking za Mkoa, Kanda na Taifa zitatolewa kupitia mfumo rasmi wa AFMIND CUP.
+                    MFUMO WA MASHINDANO
+                    13.1 Mfumo wa mashindano utaamuliwa na Kamati ya Mashindano.
+                    13.2 Ratiba rasmi iliyotolewa ndiyo itatumika.
+                    KUCHELEWA NA KUTOHUDHURIA
+                    14.1 Mchezaji anayeshindwa kufika kwa muda uliopangwa anaweza kupoteza mchezo.
+                    14.2 Kutohudhuria bila sababu kunaweza kuathiri Rating yake.
+                    MAJUKUMU YA WASHIRIKI
+                    a) Kuheshimu kanuni.
+                    b) Kuheshimu marefa.
+                    c) Kuheshimu washiriki wengine.
+                    d) Kulinda taswira ya AFMIND CUP.
+                    HAKI ZA WASHIRIKI
+                    a) Kushiriki kwa usawa.
+                    b) Kusikilizwa.
+                    c) Kukata rufani.
+                    KAMATI YA MASHINDANO
+                    Itasimamia mashindano yote ya AFMIND CUP.
+                    KAMATI YA NIDHAMU
+                    Itashughulikia ukiukwaji wa kanuni.
+                    KAMATI YA RUFANI
+                    Itasikiliza na kuamua rufani zote.
+                    MIGOGORO YA MASHINDANO
+                    Migogoro yote itaanza kushughulikiwa na Kamati ya Mashindano kabla ya kupelekwa Rufani.
+                    MAKOSA YA KINIDHAMU
+                    a) Matusi.
+                    b) Vitisho.
+                    c) Rushwa.
+                    d) Udanganyifu.
+                    e) Uchezeshaji wa matokeo.
+                    f) Matumizi ya utambulisho wa mtu mwingine.
+                    ADHABU
+                    a) Onyo.
+                    b) Faini.
+                    c) Kupokwa pointi.
+                    d) Kupokwa Rating.
+                    e) Kusimamishwa.
+                    f) Kufungiwa.
+                    g) Kufutiwa matokeo.
+                    RUFANI
+                    23.1 Rufani itawasilishwa ndani ya saa 24.
+                    23.2 Uamuzi wa Kamati ya Rufani utakuwa wa mwisho ndani ya AFMIND CUP.
+                    ZAWADI NA TUZO
+                    Washindi watapata zawadi kwa mujibu wa tangazo rasmi la msimu husika.
+                    UDHAMINI NA MATANGAZO
+                    MOFULI ina haki ya kuingia mikataba ya udhamini, matangazo na ushirikiano wa kibiashara.
+                    HAKI ZA PICHA, VIDEO NA MATANGAZO
+                    Washiriki wanakubali picha, video, sauti na taarifa zao kutumika kwa shughuli rasmi za AFMIND CUP bila fidia ya ziada isipokuwa kwa makubaliano maalum.
+                    ULINZI WA TAARIFA
+                    MOFULI itatunza taarifa za washiriki kwa mujibu wa sheria na sera zake.
+                    HALI ZA DHARURA
+                    MOFULI inaweza kuahirisha, kusimamisha au kubadilisha ratiba kutokana na sababu zisizozuilika.
+                    MAREKEBISHO YA KANUNI
+                    MOFULI ina haki ya kurekebisha kanuni hizi kwa manufaa ya mashindano.
+                    TAFSIRI NA KUANZA KUTUMIKA
+                    30.1 Tafsiri rasmi ya kanuni hizi itatolewa na MOFULI.
+                    30.2 Kanuni hizi zinaanza kutumika rasmi kuanzia msimu wa AFMIND CUP 2026/2027.
+                    IMEIDHINISHWA NA:
+                    AFMIND CUP TANZANIA
+                    Kwa niaba ya MOFULI MULTI BUSINESS &amp; SPORTS PROMOTION
+                </div>
+                <!-- PLAYER SIGNATURE (legal) -->
+                <div class="px-3 pt-2">
+                    <label class="form-label fw-bold">Sahihi ya Mshiriki (kukubali makubaliano) <span class="text-danger">*</span></label>
+                    <canvas id="legalSignatureCanvas" class="signature-canvas" style="height:130px; width:100%;"></canvas>
+                    <div class="mt-2"><button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" id="clearLegalSigBtn"><i class="fas fa-eraser me-1"></i> Futa Sahihi</button></div>
+                    <input type="hidden" id="legalSignatureData" value="">
+                    <small id="legalSigError" class="text-danger d-none">Tia sahihi hapa kabla ya kukubali.</small>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Sijakubali</button><button type="button" class="btn btn-success rounded-pill" id="acceptRulesBtn"><i class="fas fa-check me-1"></i> Nimekubali Masharti</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== BOOTSTRAP JS ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+    </script>
+
+    <!-- ============================================================ -->
+    <!-- ===== MAIN JAVASCRIPT (Public) ===== -->
+    <!-- ============================================================ -->
+    <script>
+        (function() {
+            'use strict';
+
+            // ===== FIREBASE (same as admin) =====
+            const firebaseConfig = {
+                apiKey: "AIzaSyBeBc7UCG6RrDxD_UWt9CH_y0HcDYiCU2U",
+                authDomain: "mofuli-media.firebaseapp.com",
+                databaseURL: "https://mofuli-media-default-rtdb.europe-west1.firebasedatabase.app",
+                projectId: "mofuli-media",
+                storageBucket: "mofuli-media.firebasestorage.app",
+                messagingSenderId: "955126596801",
+                appId: "1:955126596801:web:5f7cf330ae6bea5ed98040",
+                measurementId: "G-M87X71BXBD"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const fbDatabase = firebase.database();
+
+            // ===== CONSTANTS =====
+            const LOGO_URL = "https://i.postimg.cc/dL6GBR8N/LOGO.png";
+
+            // ===== DB LAYER (same as admin) =====
+            const DB = {
+                _cacheKeys: ['players', 'teams', 'results', 'splashAd'],
+                _getCache(key) { try { return JSON.parse(localStorage.getItem('afmind_' + key)) || null; } catch { return null; } },
+                _setCache(key, data) { try { localStorage.setItem('afmind_' + key, JSON.stringify(data)); } catch (e) {} },
+                get(key) { return this._getCache(key) || (key === 'splashAd' ? null : []); },
+                async set(key, data) { this._setCache(key, data); try { await fbDatabase.ref(key).set(data); } catch (err) { console.warn(
+                        'Firebase set error:', err);
+                    throw err; } },
+                async getNextId(type) {
+                    const ref = fbDatabase.ref('counters/' + type);
+                    let newId = 0;
+                    try {
+                        await ref.transaction(cur => { if (cur === null || cur === undefined) { newId = 1; return 1; }
+                            newId = cur + 1; return newId; });
+                        localStorage.setItem('afmind_counter_' + type, newId);
+                        return newId;
+                    } catch (e) {
+                        let id = parseInt(localStorage.getItem('afmind_counter_' + type) || 0);
+                        id++;
+                        localStorage.setItem('afmind_counter_' + type, id);
+                        return id;
+                    }
+                },
+                async generatePlayerId(region, participation) {
+                    const rc = getRegionCode(region);
+                    const type = (participation === 'Team') ? 'team' : 'individual';
+                    const c = await this.getNextId(type);
+                    if (type === 'individual') return 'ADL-INV-' + rc + '-' + String(c).padStart(5, '0');
+                    else return 'ADL-TM-' + rc + '-' + String(c).padStart(3, '0');
+                },
+                async generateTeamCode(region) {
+                    const rc = getRegionCode(region);
+                    const c = await this.getNextId('teamCode');
+                    return 'ADL-TM-' + rc + '-' + String(c).padStart(3, '0');
+                },
+                getSplashAd() { return this.get('splashAd'); },
+                async setSplashAd(ad) { await this.set('splashAd', ad); },
+                getPlayers() { return this.get('players') || []; },
+                async setPlayers(p) { await this.set('players', p); },
+                getTeams() { return this.get('teams') || []; },
+                async setTeams(t) { await this.set('teams', t); },
+                getResults() { return this.get('results') || []; },
+                async setResults(r) { await this.set('results', r); },
+                async syncFromFirebase() {
+                    try {
+                        const snap = await fbDatabase.ref('/').once('value');
+                        const data = snap.val() || {};
+                        if (data.players) this._setCache('players', data.players);
+                        if (data.teams) this._setCache('teams', data.teams);
+                        if (data.results) this._setCache('results', data.results);
+                        if (data.splashAd) this._setCache('splashAd', data.splashAd);
+                        if (data.counters) {
+                            localStorage.setItem('afmind_counter_individual', data.counters.individual || 0);
+                            localStorage.setItem('afmind_counter_team', data.counters.team || 0);
+                            localStorage.setItem('afmind_counter_teamCode', data.counters.teamCode || 0);
+                        }
+                        return true;
+                    } catch (e) { console.error('Sync error:', e); return false; }
+                }
+            };
+
+            function getRegionCode(regionName) {
+                const map = {
+                    'Dar es Salaam': 'DAR',
+                    'Arusha': 'ARU',
+                    'Dodoma': 'DOD',
+                    'Mwanza': 'MWZ',
+                    'Mbeya': 'MBE',
+                    'Morogoro': 'MOR',
+                    'Tanga': 'TAN',
+                    'Kilimanjaro': 'KIL',
+                    'Iringa': 'IRI',
+                    'Kagera': 'KAG',
+                    'Mara': 'MAR',
+                    'Manyara': 'MAN',
+                    'Njombe': 'NJO',
+                    'Pwani': 'PWA',
+                    'Rukwa': 'RUK',
+                    'Ruvuma': 'RUV',
+                    'Shinyanga': 'SHI',
+                    'Simiyu': 'SIM',
+                    'Singida': 'SIN',
+                    'Songwe': 'SON',
+                    'Tabora': 'TAB',
+                    'Katavi': 'KAT',
+                    'Geita': 'GET',
+                    'Lindi': 'LIN',
+                    'Mtwara': 'MTW',
+                    'Unguja Kaskazini': 'UNK',
+                    'Unguja Kusini': 'UNS',
+                    'Mjini Magharibi': 'MJM',
+                    'Pemba Kaskazini': 'PEK',
+                    'Pemba Kusini': 'PES'
+                };
+                return map[regionName] || 'XXX';
+            }
+
+            // ===== HELPERS =====
+            function fileToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    if (file.size > 2 * 1024 * 1024) { reject(new Error(
+                        'Picha ni kubwa sana. Tafadhali chagua picha chini ya 2MB.'
+                    )); return; }
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (file.type.startsWith('image/')) {
+                            compressImage(e.target.result, 0.7, resolve);
+                        } else {
+                            resolve(e.target.result);
+                        }
+                    };
+                    reader.onerror = function(e) { reject(new Error('Kusoma faili kumeshindwa.')); };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            function compressImage(dataUrl, quality, callback) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    let width = img.width,
+                        height = img.height;
+                    const maxSize = 800;
+                    if (width > maxSize || height > maxSize) {
+                        const ratio = Math.min(maxSize / width, maxSize / height);
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressed = canvas.toDataURL('image/jpeg', quality);
+                    callback(compressed);
+                };
+                img.onerror = function() { callback(dataUrl); };
+                img.src = dataUrl;
+            }
+
+            function isValidPhone(phone) { return phone && phone.trim().length > 0; }
+
+            function isValidNIN(nin) { return /^\d{8}-\d{5}-\d{5}-\d{2}$/.test(nin); }
+
+            function isValidPassport(p) { return /^[A-Z]{3}\d{7}$/.test(p); }
+
+            function isValidVoter(v) { return /^T-\d{4}-\d{4}-\d{3}-\d$/.test(v); }
+
+            function isValidDriving(d) { return /^\d{10}$/.test(d); }
+
+            function validateIdNumber(type, value) {
+                if (type === 'NIN') return isValidNIN(value);
+                if (type === 'Passport') return isValidPassport(value);
+                if (type === 'Voter ID') return isValidVoter(value);
+                if (type === 'Driving Licence') return isValidDriving(value);
+                return true;
+            }
+
+            function formatIdNumber(value, type) {
+                let raw = value.replace(/-/g, '');
+                if (type === 'NIN') {
+                    if (raw.length > 8) raw = raw.slice(0, 8) + '-' + raw.slice(8);
+                    if (raw.length > 14) raw = raw.slice(0, 14) + '-' + raw.slice(14);
+                    if (raw.length > 20) raw = raw.slice(0, 20) + '-' + raw.slice(20);
+                    if (raw.length > 23) raw = raw.slice(0, 23);
+                    return raw;
+                } else if (type === 'Passport') return raw.slice(0, 10);
+                else if (type === 'Voter ID') {
+                    if (raw.length > 1) raw = raw[0] + '-' + raw.slice(1);
+                    if (raw.length > 6) raw = raw.slice(0, 6) + '-' + raw.slice(6);
+                    if (raw.length > 11) raw = raw.slice(0, 11) + '-' + raw.slice(11);
+                    if (raw.length > 15) raw = raw.slice(0, 15) + '-' + raw.slice(15);
+                    if (raw.length > 17) raw = raw.slice(0, 17);
+                    return raw;
+                } else if (type === 'Driving Licence') return raw.slice(0, 10);
+                return value;
+            }
+
+            // ===== STATE =====
+            let cameraStream = null,
+                cameraTargetInputId = null;
+            let chartInstances = {};
+
+            // ===== DOM =====
+            const $ = (id) => document.getElementById(id);
+            const splashScreen = $('splashScreen');
+            const splashEnterBtn = $('splashEnterBtn');
+            const loadingOverlay = $('loadingOverlay');
+            const connectionBadge = $('connectionBadge');
+            const installBtn = $('installAppBtn');
+            const vvipBtn = $('vvipBtn');
+
+            function showLoading() { loadingOverlay.style.display = 'flex'; }
+
+            function hideLoading() { loadingOverlay.style.display = 'none'; }
+
+            function updateConnectionBadge() {
+                fbDatabase.ref('.info/connected').on('value', snap => {
+                    connectionBadge.className = snap.val() ? 'online-dot' : 'offline-dot';
+                });
+            }
+
+            function switchTab(tabId) {
+                document.querySelectorAll('.view-tab').forEach(e => e.classList.remove('active'));
+                const tab = $(tabId);
+                if (tab) tab.classList.add('active');
+                document.querySelectorAll('#mainTabs .nav-link').forEach(e => e.classList.remove('active'));
+                const link = document.querySelector('#mainTabs .nav-link[data-view="' + tabId + '"]');
+                if (link) link.classList.add('active');
+                if (tabId === 'dashboard') renderHomePage();
+                if (tabId === 'ranking') renderRanking();
+            }
+
+            // ===== SIGNATURE =====
+            function initSignature(canvasId, hiddenId) {
+                const canvas = $(canvasId);
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                let drawing = false;
+                const resize = () => {
+                    const rect = canvas.parentElement.getBoundingClientRect();
+                    canvas.width = rect.width - 2;
+                    canvas.height = 130;
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#000';
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                };
+                resize();
+                window.addEventListener('resize', resize);
+                const getPos = e => {
+                    const rect = canvas.getBoundingClientRect();
+                    return {
+                        x: (e.touches ? e.touches[0].clientX : e.clientX) - rect.left,
+                        y: (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+                    };
+                };
+                const start = e => { e.preventDefault();
+                    drawing = true; const p = getPos(e);
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y); };
+                const move = e => { e.preventDefault(); if (!drawing) return; const p = getPos(e);
+                    ctx.lineTo(p.x, p.y);
+                    ctx.stroke(); };
+                const end = e => { e.preventDefault(); if (drawing) { drawing = false;
+                        ctx.closePath(); if (hiddenId) $(hiddenId).value = canvas.toDataURL('image/png'); } };
+                canvas.addEventListener('mousedown', start);
+                canvas.addEventListener('mousemove', move);
+                canvas.addEventListener('mouseup', end);
+                canvas.addEventListener('mouseleave', end);
+                canvas.addEventListener('touchstart', start, { passive: false });
+                canvas.addEventListener('touchmove', move, { passive: false });
+                canvas.addEventListener('touchend', end, { passive: false });
+            }
+
+            function clearSignature(canvasId, hiddenId) {
+                const canvas = $(canvasId);
+                if (canvas) { const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height); }
+                if (hiddenId) $(hiddenId).value = '';
+            }
+
+            // ===== CAMERA =====
+            function openCamera(inputId) {
+                cameraTargetInputId = inputId;
+                new bootstrap.Modal($('cameraModal')).show();
+                const video = $('cameraVideo');
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                        .then(stream => { cameraStream = stream;
+                            video.srcObject = stream;
+                            video.play(); })
+                        .catch(err => { alert('❌ Kamera haipatikani. Hakikisha umekubali ruhusa.'); });
+                } else { alert('Kifaa hakiwezi kufungua kamera.'); }
+            }
+
+            function capturePhoto() {
+                const video = $('cameraVideo');
+                const canvas = $('cameraCanvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => {
+                    const file = new File([blob], 'camera_capture.jpg', { type: 'image/jpeg' });
+                    const input = $(cameraTargetInputId);
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    input.files = dt.files;
+                    input.dispatchEvent(new Event('change'));
+                    if (cameraTargetInputId === 'playerPhoto') $('playerPhoto').dispatchEvent(new Event(
+                    'change'));
+                    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop());
+                        cameraStream = null; }
+                    bootstrap.Modal.getInstance($('cameraModal')).hide();
+                }, 'image/jpeg');
+            }
+
+            // ===== VALIDATION =====
+            function validateTeamPlayerId(inputId, statusId) {
+                const input = $(inputId);
+                const status = $(statusId);
+                if (!input || !status) return;
+                const val = input.value.trim();
+                if (!val) { status.innerHTML = '';
+                    status.className = 'id-validation-icon';
+                    input.setCustomValidity(''); return; }
+                const players = DB.getPlayers();
+                const found = players.find(p => p.playerId === val && p.status === 'approved');
+                if (found) {
+                    status.innerHTML = '<i class="fas fa-check-circle valid"></i>';
+                    status.className = 'id-validation-icon valid';
+                    input.setCustomValidity('');
+                } else {
+                    status.innerHTML = '<i class="fas fa-times-circle invalid"></i>';
+                    status.className = 'id-validation-icon invalid';
+                    input.setCustomValidity('Player ID haijasajiliwa au haijaidhinishwa.');
+                }
+            }
+
+            // ===== POINTS =====
+            function calculatePoints(levelStr, winner, p1Id, p2Id, players) {
+                let effectiveLevel = 'Mkoa';
+                if (levelStr.includes('Taifa')) effectiveLevel = 'Taifa';
+                else if (levelStr.includes('Kanda')) effectiveLevel = 'Kanda';
+                else if (levelStr.includes('Mkoa')) effectiveLevel = 'Mkoa';
+                else if (levelStr.includes('Wilaya')) effectiveLevel = 'Wilaya';
+                const p1 = players.find(p => p.playerId === p1Id);
+                const p2 = players.find(p => p.playerId === p2Id);
+                if (!p1 || !p2) return;
+                p1.points = p1.points || 1000;
+                p2.points = p2.points || 1000;
+                if (effectiveLevel === 'Wilaya') {
+                    if (winner === p1Id) { p1.points += 10; } else if (winner === p2Id) { p2.points += 10; } else { p1.points +=
+                            5;
+                        p2.points += 5; }
+                } else if (effectiveLevel === 'Mkoa') {
+                    if (winner === p1Id) { p1.points += 20; } else if (winner === p2Id) { p2.points += 20; } else { p1.points +=
+                            10;
+                        p2.points += 10; }
+                } else if (effectiveLevel === 'Kanda') {
+                    if (winner === p1Id) { p1.points += 30;
+                        p2.points = Math.max(0, p2.points - 30); } else if (winner === p2Id) { p2.points += 30;
+                        p1.points = Math.max(0, p1.points - 30); }
+                } else if (effectiveLevel === 'Taifa') {
+                    if (winner === p1Id) { p1.points += 50;
+                        p2.points = Math.max(0, p2.points - 50); } else if (winner === p2Id) { p2.points += 50;
+                        p1.points = Math.max(0, p1.points - 50); }
+                }
+            }
+
+            // ===== SLIDESHOW =====
+            function initSlideshow() {
+                const slides = document.querySelectorAll('.hero-slide');
+                let current = 0;
+
+                function showSlide(index) {
+                    slides.forEach((s, i) => {
+                        s.classList.toggle('active', i === index);
+                    });
+                }
+                showSlide(0);
+                setInterval(() => {
+                    current = (current + 1) % slides.length;
+                    showSlide(current);
+                }, 2000);
+            }
+
+            // ===== HOME PAGE =====
+            function renderHomePage() {
+                const players = DB.getPlayers();
+                const teams = DB.getTeams();
+                const results = DB.getResults();
+                $('hStatPlayers').textContent = players.length;
+                $('hStatTeams').textContent = teams.length;
+                $('hStatMatches').textContent = results.length;
+                const regions = new Set(players.map(p => p.region).filter(r => r));
+                $('hStatRegions').textContent = regions.size;
+            }
+
+            // ===== RANKING =====
+            function renderRanking() {
+                const players = DB.getPlayers().filter(p => p.status === 'approved');
+                const results = DB.getResults();
+                const teams = DB.getTeams().filter(t => t.status === 'approved');
+
+                const rankedPlayers = players.map(p => {
+                    const matches = results.filter(r => r.player1 === p.playerId || r.player2 === p.playerId);
+                    const wins = matches.filter(r => r.winner === p.playerId).length;
+                    const draws = matches.filter(r => (r.winner === 'Draw' || !r.winner) && (r.player1 === p
+                        .playerId || r.player2 === p.playerId)).length;
+                    const losses = matches.filter(r => r.winner && r.winner !== p.playerId && r.winner !==
+                        'Draw' && (r.player1 === p.playerId || r.player2 === p.playerId)).length;
+                    return { ...p, matches: matches.length, wins, draws, losses, points: p.points || 0 };
+                }).sort((a, b) => b.points - a.points || b.wins - a.wins);
+
+                const tbody1 = $('individualRanking');
+                if (rankedPlayers.length) {
+                    let html = '';
+                    rankedPlayers.forEach((p, i) => {
+                        const team = teams.find(t => t.id === p.teamId);
+                        const photoHtml = p.photoUrl ?
+                            `<img src="${p.photoUrl}" style="width:45px;height:45px;border-radius:50%;object-fit:cover;border:2px solid #dee2e6;">` :
+                            `<div style="width:45px;height:45px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center;color:#6c757d;font-size:0.7rem;">No</div>`;
+                        html +=
+                            `<tr><td>${i+1}</td><td>${photoHtml}</td><td><span class="player-id">${p.playerId}</span></td><td><strong>${p.fullName}</strong></td><td>${team ? team.name : '—'}</td><td>${p.region || ''}</td><td><span class="badge bg-info">${p.playerLevel || ''}</span></td><td>${p.matches}</td><td class="text-success fw-bold">${p.wins}</td><td class="text-warning fw-bold">${p.draws}</td><td class="text-danger fw-bold">${p.losses}</td><td><strong>${p.points}</strong></td></tr>`;
+                    });
+                    tbody1.innerHTML = html;
+                } else {
+                    tbody1.innerHTML =
+                        '<tr><td colspan="12" class="text-center text-muted">Hakuna wachezaji walioidhinishwa.</td></tr>';
+                }
+
+                const rankedTeams = teams.map(t => {
+                    const members = players.filter(p => p.teamId === t.id);
+                    let totalPoints = members.reduce((sum, p) => sum + (p.points || 0), 0);
+                    return { ...t, playerCount: members.length, totalPoints };
+                }).sort((a, b) => b.totalPoints - a.totalPoints);
+
+                const tbody2 = $('teamRanking');
+                if (rankedTeams.length) {
+                    let html = '';
+                    rankedTeams.forEach((t, i) => {
+                        html +=
+                            `<tr><td>${i+1}</td><td><span class="player-id">${t.code}</span></td><td><strong>${t.name}</strong></td><td>${t.region}</td><td><span class="badge bg-secondary">${t.playerCount}</span></td><td><strong>${t.totalPoints}</strong></td></tr>`;
+                    });
+                    tbody2.innerHTML = html;
+                } else {
+                    tbody2.innerHTML =
+                        '<tr><td colspan="6" class="text-center text-muted">Hakuna timu zilizoidhinishwa.</td></tr>';
+                }
+
+                const regionMap = {};
+                players.forEach(p => {
+                    if (!regionMap[p.region]) {
+                        regionMap[p.region] = { players: 0, matches: 0, wins: 0, draws: 0, losses: 0,
+                            totalPoints: 0 };
+                    }
+                    regionMap[p.region].players++;
+                    const pMatches = results.filter(r => r.player1 === p.playerId || r.player2 === p.playerId);
+                    const wins = pMatches.filter(r => r.winner === p.playerId).length;
+                    const draws = pMatches.filter(r => (r.winner === 'Draw' || !r.winner) && (r.player1 === p
+                        .playerId || r.player2 === p.playerId)).length;
+                    const losses = pMatches.filter(r => r.winner && r.winner !== p.playerId && r.winner !==
+                        'Draw' && (r.player1 === p.playerId || r.player2 === p.playerId)).length;
+                    regionMap[p.region].matches += pMatches.length;
+                    regionMap[p.region].wins += wins;
+                    regionMap[p.region].draws += draws;
+                    regionMap[p.region].losses += losses;
+                    regionMap[p.region].totalPoints += (p.points || 0);
+                });
+                const regionRanking = Object.keys(regionMap).map(region => ({
+                    region,
+                    players: regionMap[region].players,
+                    matches: regionMap[region].matches,
+                    wins: regionMap[region].wins,
+                    draws: regionMap[region].draws,
+                    losses: regionMap[region].losses,
+                    avgPoints: regionMap[region].players ? Math.round(regionMap[region].totalPoints / regionMap[
+                        region].players) : 0
+                })).sort((a, b) => b.avgPoints - a.avgPoints);
+
+                const tbody3 = $('regionRanking');
+                if (regionRanking.length) {
+                    let html = '';
+                    regionRanking.forEach((r, i) => {
+                        html +=
+                            `<tr><td>${i+1}</td><td><strong>${r.region}</strong></td><td>${r.players}</td><td>${r.matches}</td><td class="text-success">${r.wins}</td><td class="text-warning">${r.draws}</td><td class="text-danger">${r.losses}</td><td><strong>${r.avgPoints}</strong></td></tr>`;
+                    });
+                    tbody3.innerHTML = html;
+                } else {
+                    tbody3.innerHTML =
+                        '<tr><td colspan="8" class="text-center text-muted">Hakuna data ya mikoa.</td></tr>';
+                }
+
+                const topPlayers = rankedPlayers.slice(0, 3);
+                const topTeams = rankedTeams.slice(0, 3);
+                const topRegions = regionRanking.slice(0, 3);
+
+                const container1 = $('overallTopPlayers');
+                container1.innerHTML = topPlayers.map((p, i) =>
+                    `<div class="list-group-item">${i+1}. ${p.fullName} (${p.points} pts)</div>`).join('') ||
+                    '<div class="list-group-item text-muted">Hakuna data</div>';
+
+                const container2 = $('overallTopTeams');
+                container2.innerHTML = topTeams.map((t, i) =>
+                    `<div class="list-group-item">${i+1}. ${t.name} (${t.totalPoints} pts)</div>`).join('') ||
+                    '<div class="list-group-item text-muted">Hakuna data</div>';
+
+                const container3 = $('overallTopRegions');
+                container3.innerHTML = topRegions.map((r, i) =>
+                    `<div class="list-group-item">${i+1}. ${r.region} (wastani ${r.avgPoints} pts)</div>`).join(
+                    '') || '<div class="list-group-item text-muted">Hakuna data</div>';
+            }
+
+            // ===== FORM SUBMISSIONS =====
+            async function handlePlayerSubmit(e) {
+                e.preventDefault();
+                const fullName = $('pFullName').value.trim();
+                if (!fullName) { alert('Jina kamili linahitajika.'); return; }
+                const phone = $('pPhone').value.trim();
+                if (!isValidPhone(phone)) { alert('Tafadhali andika namba yako ya simu.'); return; }
+                const idType = $('pIdType').value;
+                const idNumber = $('pIdNumber').value.trim();
+                if (!validateIdNumber(idType, idNumber)) { alert('Namba ya kitambulisho si sahihi kwa aina iliyochaguliwa.');
+                    return; }
+                const region = $('pRegion').value;
+                const participation = $('pParticipation').value;
+                const emergencySig = $('signatureData').value;
+                if (!emergencySig) { alert('Tafadhali weka sahihi ya Mtu wa Dharura.'); return; }
+                const legalSig = $('legalSignatureData').value;
+                if (!legalSig) { alert('Tafadhali weka sahihi ya Mshiriki (kwenye makubaliano).'); return; }
+
+                const btn = $('registerBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Inasajili...';
+                showLoading();
+                try {
+                    const generatedId = await DB.generatePlayerId(region, participation);
+                    const photoFile = $('playerPhoto').files[0],
+                        idFile = $('pIdUpload').files[0],
+                        emergencyFile = $('pEmergencyIdUpload').files[0];
+                    const uploads = [];
+                    if (photoFile) uploads.push(fileToBase64(photoFile));
+                    else uploads.push(Promise.resolve(null));
+                    if (idFile) uploads.push(fileToBase64(idFile));
+                    else uploads.push(Promise.resolve(null));
+                    if (emergencyFile) uploads.push(fileToBase64(emergencyFile));
+                    else uploads.push(Promise.resolve(null));
+                    const [photoBase64, idBase64, emergencyIdBase64] = await Promise.all(uploads);
+                    const nationality = $('pNationality').value;
+                    const isTz = nationality === 'Tanzania';
+                    const players = DB.getPlayers();
+                    const newPlayer = {
+                        id: players.length + 1,
+                        playerId: generatedId,
+                        fullName,
+                        title: $('pTitle').value,
+                        nickname: $('pNickname').value.trim(),
+                        gender: $('pGender').value,
+                        nationality: nationality,
+                        region: isTz ? $('pRegion').value : '',
+                        district: isTz ? $('pDistrict').value.trim() : '',
+                        street: isTz ? $('pStreet').value.trim() : '',
+                        addressDetails: isTz ? '' : $('pAddressDetails').value.trim(),
+                        dob: $('pDob').value,
+                        idType: idType,
+                        idNumber: idNumber,
+                        phone: phone,
+                        email: $('pEmail').value.trim(),
+                        participation,
+                        teamName: participation === 'Team' ? $('pTeamName').value.trim() : '',
+                        experience: $('pExperience').value,
+                        draughtsType: $('pDraughtsType').value,
+                        playerLevel: $('pLevel').value,
+                        education: $('pEducation').value,
+                        employment: $('pEmployment').value,
+                        jobTitle: $('pJobTitle').value.trim(),
+                        school: $('pSchool').value.trim(),
+                        disability: $('pDisability').value,
+                        disabilityDetails: $('pDisabilityDetails').value.trim(),
+                        emergencyName: $('pEmergencyName').value.trim(),
+                        emergencyRelation: $('pEmergencyRelation').value,
+                        emergencyPhone: $('pEmergencyPhone').value.trim(),
+                        signature: emergencySig,
+                        legalSignature: legalSig,
+                        photoUrl: photoBase64,
+                        idUrl: idBase64,
+                        emergencyIdUrl: emergencyIdBase64,
+                        status: 'pending',
+                        teamId: null,
+                        points: 0,
+                        registeredAt: new Date().toISOString()
+                    };
+                    players.push(newPlayer);
+                    await DB.setPlayers(players);
+                    $('regMsg').innerHTML =
+                        '<div class="alert alert-success"><strong>✅ Mchezaji Amesajiliwa!</strong><br><strong>ID:</strong> <span class="player-id">' +
+                        generatedId +
+                        '</span><br><strong>Hali:</strong> Inasubiri uidhinishwe na Admin.</div>';
+                    $('playerForm').reset();
+                    clearSignature('signatureCanvas', 'signatureData');
+                    clearSignature('legalSignatureCanvas', 'legalSignatureData');
+                    $('photoPreview').style.display = 'none';
+                    $('photoPreviewContainer').querySelector('.text-muted').style.display = 'block';
+                    $('teamNameWrapper').style.display = 'none';
+                    $('disabilityDetailsWrapper').style.display = 'none';
+                    document.querySelectorAll('.edu-fields').forEach(el => el.style.display = 'none');
+                    toggleNationalityFields();
+                    toggleEducationFields();
+                    updateIdField();
+                    $('pDob').value = '';
+                    renderHomePage();
+                    renderRanking();
+                    $('regSuccessId').textContent = generatedId;
+                    const successModal = new bootstrap.Modal($('regSuccessModal'), { backdrop: 'static' });
+                    successModal.show();
+                } catch (error) {
+                    $('regMsg').innerHTML = '<div class="alert alert-danger">❌ ' + error.message + '</div>';
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save me-1"></i> Sajili Mchezaji';
+                    hideLoading();
+                }
+            }
+
+            async function handleTeamSubmit(e) {
+                e.preventDefault();
+                const name = $('teamName').value.trim();
+                if (!name) { alert('Jina la timu linahitajika.'); return; }
+                const pIds = [];
+                for (let i = 1; i <= 5; i++) {
+                    const inp = $('teamP' + i);
+                    const val = inp.value.trim();
+                    if (!val) { alert('Tafadhali weka Player ID ya Mchezaji ' + i + '.'); return; }
+                    const players = DB.getPlayers();
+                    const found = players.find(p => p.playerId === val && p.status === 'approved');
+                    if (!found) { alert('Player ID "' + val + '" haijasajiliwa au haijaidhinishwa.');
+                        inp.focus(); return; }
+                    pIds.push(val);
+                }
+                const uniqueIds = new Set(pIds);
+                if (uniqueIds.size !== pIds.length) { alert(
+                    'Player ID moja imerudiwa mara mbili. Hakikisha kila mchezaji ana ID tofauti.'); return; }
+                const rIds = [];
+                for (let i = 1; i <= 3; i++) {
+                    const inp = $('teamR' + i);
+                    const val = inp.value.trim();
+                    if (val) {
+                        const players = DB.getPlayers();
+                        const found = players.find(p => p.playerId === val && p.status === 'approved');
+                        if (!found) { alert('Player ID ya akiba "' + val + '" haijasajiliwa au haijaidhinishwa.');
+                            inp.focus(); return; }
+                        if (pIds.includes(val)) { alert('Player ID ya akiba "' + val +
+                            '" tayari iko kwenye orodha ya wachezaji wakuu.');
+                            inp.focus(); return; }
+                        rIds.push(val);
+                    }
+                }
+                const uniqueReserves = new Set(rIds);
+                if (uniqueReserves.size !== rIds.length) { alert(
+                    'Player ID za akiba zimerudiwa. Hakikisha ni tofauti.'); return; }
+                const captainIdFile = $('teamCaptainIdUpload').files[0];
+                if (!captainIdFile) { alert('Tafadhali pakia nakala ya kitambulisho cha nahodha.'); return; }
+                const captainSig = $('sigCaptainData').value;
+                if (!captainSig) { alert('Tafadhali weka sahihi ya nahodha.'); return; }
+                const btn = $('teamBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Inasajili...';
+                showLoading();
+                try {
+                    const teams = DB.getTeams();
+                    const region = $('teamRegion').value;
+                    const code = await DB.generateTeamCode(region);
+                    if (teams.some(t => t.name.toLowerCase() === name.toLowerCase())) { throw new Error(
+                        'Timu tayari ipo.'); }
+                    let captainIdUrl = '';
+                    if (captainIdFile) { captainIdUrl = await fileToBase64(captainIdFile); }
+                    const newTeam = { id: teams.length + 1, code, name, region, status: 'pending', playerIds: pIds,
+                        reserveIds: rIds, captainIdUrl, captainSignature: captainSig, createdAt: new Date()
+                            .toISOString() };
+                    teams.push(newTeam);
+                    await DB.setTeams(teams);
+                    const allPlayers = DB.getPlayers();
+                    pIds.forEach(pid => { const p = allPlayers.find(pl => pl.playerId === pid); if (p) p.teamId =
+                            newTeam.id; });
+                    rIds.forEach(pid => { const p = allPlayers.find(pl => pl.playerId === pid); if (p) p.teamId =
+                            newTeam.id; });
+                    await DB.setPlayers(allPlayers);
+                    $('teamMsg').innerHTML =
+                        '<div class="alert alert-success">✅ Timu imesajiliwa! <br><strong>Msimbo:</strong> ' +
+                        code + '<br><strong>Wachezaji:</strong> ' + pIds.length +
+                        ' (wasajiliwa) + ' + rIds.length +
+                        ' (akiba)<br><strong>Hali:</strong> Inasubiri uidhinishwe na Admin.</div>';
+                    $('teamForm').reset();
+                    clearSignature('sigCaptain', 'sigCaptainData');
+                    document.querySelectorAll('.team-player-id').forEach(inp => {
+                        const sid = inp.id + 'Status';
+                        if ($(sid)) { $(sid).innerHTML = '';
+                            $(sid).className = 'id-validation-icon'; }
+                    });
+                    renderHomePage();
+                    renderRanking();
+                } catch (err) {
+                    $('teamMsg').innerHTML = '<div class="alert alert-danger">❌ ' + err.message + '</div>';
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save me-1"></i> Sajili Timu';
+                    hideLoading();
+                }
+            }
+
+            // ===== TOGGLES =====
+            function toggleNationalityFields() {
+                const nat = $('pNationality').value;
+                const isTz = nat === 'Tanzania';
+                document.querySelectorAll('.tz-fields').forEach(el => {
+                    el.style.display = isTz ? 'block' : 'none';
+                    const inputs = el.querySelectorAll('input, select');
+                    inputs.forEach(inp => { if (isTz) inp.setAttribute('required', 'required');
+                        else inp.removeAttribute('required'); });
+                });
+                $('addressDetailsWrapper').style.display = isTz ? 'none' : 'block';
+                const addrInput = $('pAddressDetails');
+                if (!isTz) addrInput.setAttribute('required', 'required');
+                else addrInput.removeAttribute('required');
+            }
+
+            function toggleEducationFields() {
+                const emp = $('pEmployment').value;
+                const isStudent = emp === 'Student';
+                document.querySelectorAll('.edu-fields').forEach(el => {
+                    el.style.display = isStudent ? 'block' : 'none';
+                    const inputs = el.querySelectorAll('input, select');
+                    inputs.forEach(inp => { if (isStudent) inp.setAttribute('required', 'required');
+                        else inp.removeAttribute('required'); });
+                });
+                const jobWrapper = $('jobTitleWrapper');
+                if (jobWrapper) {
+                    jobWrapper.style.display = isStudent ? 'none' : 'block';
+                    const jobInput = $('pJobTitle');
+                    if (jobInput) { if (isStudent) { jobInput.removeAttribute('required');
+                            jobInput.value = ''; } else { jobInput.setAttribute('required', 'required'); } }
+                }
+            }
+
+            function updateIdField() {
+                const type = $('pIdType').value;
+                const input = $('pIdNumber');
+                const hint = $('idFormatHint');
+                const maxLen = getMaxIdLength(type);
+                input.setAttribute('maxlength', maxLen);
+                const hints = { 'NIN': 'Muundo: 19630202-11101-00001-18', 'Passport': 'Muundo: ABC1234567 (herufi 3 + namba 7)',
+                    'Voter ID': 'Muundo: T-1000-6662-572-3', 'Driving Licence': 'Muundo: 4000274186 (namba 10)' };
+                hint.textContent = hints[type] || 'Ingiza namba sahihi';
+                input.placeholder = 'Ingiza namba...';
+                input.value = formatIdNumber(input.value, type);
+            }
+
+            function getMaxIdLength(type) {
+                if (type === 'NIN') return 23;
+                if (type === 'Passport') return 10;
+                if (type === 'Voter ID') return 17;
+                if (type === 'Driving Licence') return 10;
+                return 20;
+            }
+
+            // ===== VVIP PORTAL =====
+            function openVvipModal() {
+                new bootstrap.Modal($('vvipModal')).show();
+            }
+
+            // ===== INIT =====
+            document.addEventListener('DOMContentLoaded', async function() {
+                showLoading();
+
+                splashEnterBtn.addEventListener('click', function() { splashScreen.style.display = 'none'; });
+                updateConnectionBadge();
+                window.addEventListener('online', function() { connectionBadge.className = 'online-dot'; });
+                window.addEventListener('offline', function() { connectionBadge.className = 'offline-dot'; });
+
+                try { await DB.syncFromFirebase(); } catch (e) { console.warn('Sync warning:', e); }
+
+                initSignature('signatureCanvas', 'signatureData');
+                initSignature('sigCaptain', 'sigCaptainData');
+
+                $('clearSigBtn').addEventListener('click', function() { clearSignature('signatureCanvas',
+                    'signatureData'); });
+                $('clearSigCaptain').addEventListener('click', function() { clearSignature('sigCaptain',
+                    'sigCaptainData'); });
+                $('clearLegalSigBtn').addEventListener('click', function() { clearSignature('legalSignatureCanvas',
+                        'legalSignatureData'); });
+
+                $('cameraBtnPlayer').addEventListener('click', function() { openCamera('playerPhoto'); });
+                $('cameraBtnId').addEventListener('click', function() { openCamera('pIdUpload'); });
+                $('cameraBtnEmergency').addEventListener('click', function() { openCamera('pEmergencyIdUpload'); });
+                $('cameraBtnCaptain').addEventListener('click', function() { openCamera('teamCaptainIdUpload'); });
+                $('capturePhotoBtn').addEventListener('click', capturePhoto);
+
+                $('playerPhoto').addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    const pc = $('photoPreviewContainer'),
+                        pi = $('photoPreview');
+                    if (file) {
+                        const r = new FileReader();
+                        r.onload = ev => { pi.src = ev.target.result;
+                            pi.style.display = 'inline-block';
+                            pc.querySelector('.text-muted').style.display = 'none'; };
+                        r.readAsDataURL(file);
+                    } else { pi.style.display = 'none';
+                        pc.querySelector('.text-muted').style.display = 'block'; }
+                });
+
+                $('cameraModal').addEventListener('hidden.bs.modal', function() {
+                    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop());
+                        cameraStream = null; }
+                    $('cameraVideo').srcObject = null;
+                });
+
+                document.querySelectorAll('#mainTabs .nav-link').forEach(el => {
+                    el.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const v = this.dataset.view;
+                        switchTab(v);
+                    });
+                });
+
+                $('pNationality').addEventListener('change', toggleNationalityFields);
+                $('pEmployment').addEventListener('change', toggleEducationFields);
+                $('pParticipation').addEventListener('change', function() { $('teamNameWrapper').style.display = this
+                        .value === 'Team' ? 'block' : 'none'; });
+                $('pDisability').addEventListener('change', function() { $('disabilityDetailsWrapper').style
+                        .display = this.value === 'Yes' ? 'block' : 'none'; });
+                $('pIdType').addEventListener('change', updateIdField);
+                $('pIdNumber').addEventListener('input', function() {
+                    const type = $('pIdType').value;
+                    this.value = formatIdNumber(this.value, type);
+                });
+
+                document.querySelectorAll('.team-player-id').forEach(inp => {
+                    const id = inp.id;
+                    const statusId = id + 'Status';
+                    inp.addEventListener('input', function() { validateTeamPlayerId(id, statusId); });
+                    inp.addEventListener('blur', function() { validateTeamPlayerId(id, statusId); });
+                });
+
+                // VVIP PORTAL
+                vvipBtn.addEventListener('click', openVvipModal);
+
+                // FORM SUBMISSIONS
+                $('playerForm').addEventListener('submit', handlePlayerSubmit);
+                $('teamForm').addEventListener('submit', handleTeamSubmit);
+
+                // Legal agreement (simplified for public)
+                const agreeCheckbox = $('agreeTerms');
+                const openTermsLink = $('openTermsLink');
+                const acceptRulesBtn = $('acceptRulesBtn');
+                const rulesModal = new bootstrap.Modal($('rulesModal'), { backdrop: 'static', keyboard: false });
+                const termsError = $('termsError');
+                const legalSigError = $('legalSigError');
+                initSignature('legalSignatureCanvas', 'legalSignatureData');
+                openTermsLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    agreeCheckbox.checked = false;
+                    termsError.classList.remove('d-none');
+                    clearSignature('legalSignatureCanvas', 'legalSignatureData');
+                    rulesModal.show();
+                });
+                agreeCheckbox.addEventListener('change', function() {
+                    if (this.checked) { this.checked = false;
+                        termsError.classList.remove('d-none');
+                        clearSignature('legalSignatureCanvas', 'legalSignatureData');
+                        rulesModal.show(); }
+                });
+                acceptRulesBtn.addEventListener('click', function() {
+                    const sig = $('legalSignatureData').value;
+                    if (!sig) { legalSigError.classList.remove('d-none'); return; }
+                    agreeCheckbox.checked = true;
+                    termsError.classList.add('d-none');
+                    legalSigError.classList.add('d-none');
+                    rulesModal.hide();
+                });
+                $('rulesModal').addEventListener('hidden.bs.modal', function() {
+                    if (!agreeCheckbox.checked) { termsError.classList.remove('d-none'); }
+                });
+
+                // Ranking tabs
+                document.querySelectorAll('#rankingTabs .nav-link').forEach(tab => {
+                    tab.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        document.querySelectorAll('#rankingTabs .nav-link').forEach(t => t.classList.remove(
+                            'active'));
+                        this.classList.add('active');
+                        const target = this.dataset.rankTab;
+                        document.querySelectorAll('.rank-view').forEach(v => v.classList.remove('active'));
+                        const view = document.getElementById('rank' + target.charAt(0).toUpperCase() +
+                            target.slice(1));
+                        if (view) view.classList.add('active');
+                        renderRanking();
+                    });
+                });
+
+                initSlideshow();
+
+                toggleNationalityFields();
+                toggleEducationFields();
+                updateIdField();
+
+                switchTab('dashboard');
+
+                renderHomePage();
+                renderRanking();
+
+                hideLoading();
+            });
+
+        })();
+    </script>
+
+</body>
+</html>
